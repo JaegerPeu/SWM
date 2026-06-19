@@ -52,7 +52,7 @@ def enviar_email(dados):
     msg["From"]    = remetente
     msg["To"]      = DESTINATARIO
 
-    with smtplib.SMTP("smtp.office365.com", 587) as srv:
+    with smtplib.SMTP("smtp.gmail.com", 587) as srv:
         srv.ehlo()
         srv.starttls()
         srv.login(remetente, senha)
