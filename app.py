@@ -8,27 +8,23 @@ st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layo
 st.markdown("""
 <style>
 #MainMenu, footer, header { visibility: hidden }
-.btg-box {
-    background: #eff6ff; border: 1.5px solid #bfdbfe;
-    border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
-    display: flex; align-items: stretch; justify-content: space-between;
+.btg-box, .dest-box {
+    border-radius: 10px; padding: 16px 20px; margin: 10px 0 16px 0;
+    display: flex; align-items: center; justify-content: space-between; min-height: 84px;
 }
+.btg-box  { background: #eff6ff; border: 1.5px solid #bfdbfe; }
+.dest-box { background: #f8fafc; border: 1.5px solid #cbd5e1; }
 .btg-label  { font-size: 11px; font-weight: 600; color: #3b82f6;
                text-transform: uppercase; letter-spacing: .07em }
-.btg-numero { font-size: 26px; font-weight: 700; color: #1d4ed8; margin-top: 2px }
-.btg-nome   { font-size: 14px; color: #334155; margin-top: 3px }
-.dest-box {
-    background: #f8fafc; border: 1.5px solid #cbd5e1;
-    border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
-    display: flex; align-items: stretch; justify-content: space-between;
-}
-.dest-label { font-size: 11px; font-weight: 600; color: #64748b;
-               text-transform: uppercase; letter-spacing: .07em }
-.dest-banco { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 2px }
-.dest-detalhe { font-size: 13px; color: #475569; margin-top: 3px }
+.btg-numero { font-size: 26px; font-weight: 700; color: #1d4ed8; margin-top: 3px }
+.btg-nome   { font-size: 14px; color: #334155; margin-top: 4px }
+.dest-label   { font-size: 11px; font-weight: 600; color: #64748b;
+                 text-transform: uppercase; letter-spacing: .07em }
+.dest-banco   { font-size: 22px; font-weight: 700; color: #1e293b; margin-top: 3px }
+.dest-detalhe { font-size: 14px; color: #475569; margin-top: 4px; line-height: 1.55 }
 .box-content { display: flex; flex-direction: column; justify-content: center; }
-.bank-logo   { align-self: stretch; width: auto; max-width: 100px; object-fit: contain;
-                border-radius: 8px; flex-shrink: 0; margin-left: 14px; }
+.bank-logo   { height: 64px; width: auto; max-width: 100px; object-fit: contain;
+                border-radius: 8px; flex-shrink: 0; margin-left: 16px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -118,8 +114,8 @@ def dest_box(c):
     <div class="dest-box">
         <div class="box-content">
             <div class="dest-label">Conta de destino</div>
-            <div class="dest-banco">{c['banco_nome']}</div>
-            <div class="dest-detalhe">
+            <div class="dest-banco" style="color:inherit;">{c['banco_nome']}</div>
+            <div class="dest-detalhe" style="color:inherit;opacity:.75;">
                 Ag. {c['agencia']} &nbsp;·&nbsp; Cc. {c['conta']}-{c['digito']} ({c['tipo']})<br>
                 Titular: {c['titular']}
             </div>
