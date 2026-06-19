@@ -136,7 +136,7 @@ if step == "sucesso":
 
 # ── STEP 1: CLIENTE ───────────────────────────────────────────────────────
 elif step == "cliente":
-    st.subheader("1 · Selecione o cliente")
+    st.subheader("1 · Selecione o cliente (CONTA ORIGEM)")
     if st.session_state.clientes is None:
         with st.spinner("Carregando clientes..."):
             st.session_state.clientes = get_clientes(st.session_state.banker_id)
