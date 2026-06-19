@@ -27,7 +27,7 @@ st.markdown("""
 .dest-banco { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 2px }
 .dest-detalhe { font-size: 13px; color: #475569; margin-top: 3px }
 .box-content { display: flex; flex-direction: column; justify-content: center; }
-.bank-logo   { height: 100%; width: auto; max-width: 90px; object-fit: contain;
+.bank-logo   { align-self: stretch; width: auto; max-width: 100px; object-fit: contain;
                 border-radius: 8px; flex-shrink: 0; margin-left: 14px; }
 </style>
 """, unsafe_allow_html=True)
@@ -74,15 +74,13 @@ LOGOS = {
     "348": "xpi.com.br",
 }
 
-def _logo_img(codigo, size=52):
-    token  = st.secrets.get("LOGO_TOKEN", "")
-    val    = LOGOS.get(str(codigo), "")
+def _logo_img(codigo):
+    token = st.secrets.get("LOGO_TOKEN", "")
+    val   = LOGOS.get(str(codigo), "")
     if not val:
         return ""
     url = val if val.startswith("http") else f"https://img.logo.dev/{val}?token={token}&retina=true"
-    return (f'<img src="{url}" style="width:{size}px;height:{size}px;'
-            f'object-fit:contain;border-radius:8px;flex-shrink:0;margin-left:14px;"'
-            f' onerror="this.style.display=\'none\'">')
+    return f'<img src="{url}" class="bank-logo" onerror="this.style.display=\'none\'">'
 
 # ── SESSION STATE ─────────────────────────────────────────────────────────
 for k, v in [
@@ -105,7 +103,7 @@ def btg_box(conta_btg, nome):
     logo = _logo_img("SWM")
     st.markdown(f"""
     <div class="btg-box">
-        <div>
+        <div class="box-content">
             <div class="btg-label">Conta BTG de origem</div>
             <div class="btg-numero">{conta_btg}</div>
             <div class="btg-nome">{nome}</div>
@@ -118,7 +116,7 @@ def dest_box(c):
     logo = _logo_img(c.get("banco_codigo", ""))
     st.markdown(f"""
     <div class="dest-box">
-        <div>
+        <div class="box-content">
             <div class="dest-label">Conta de destino</div>
             <div class="dest-banco">{c['banco_nome']}</div>
             <div class="dest-detalhe">
