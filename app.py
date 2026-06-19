@@ -96,7 +96,17 @@ def parse_valor(s):
     if not s:
         return None
     if "," in s:
+        # formato BR: . = milhar, , = decimal
         s = s.replace(".", "").replace(",", ".")
+    else:
+        dot = s.rfind(".")
+        if dot != -1 and len(s) - dot - 1 <= 2:
+            # ponto em posição decimal (ex: 1500.50) — preserva como decimal
+            inteiro = s[:dot].replace(".", "")
+            s = inteiro + "." + s[dot + 1:]
+        else:
+            # ponto em posição de milhar (ex: 1.500) — remove
+            s = s.replace(".", "")
     try:
         v = float(s)
         return v if v > 0 else None
@@ -207,6 +217,7 @@ if step == "sucesso":
         st.session_state.conta_nova  = False
         st.session_state.sol         = None
         st.session_state.sol_mock    = None
+        st.session_state.pop("valor_ted", None)
         clear_nc()
         st.rerun()
 
@@ -359,15 +370,23 @@ elif step == "transferencia":
         st.warning("⚠️ Conta nova — será cadastrada pela equipe após execução.")
 
     st.subheader("3 · Dados da transferência")
+
+    col1, col2 = st.columns(2)
+    valor_str = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00", key="valor_ted")
+    valor_preview = parse_valor(valor_str)
+    if valor_str.strip():
+        if valor_preview:
+            col1.caption(f"R$ {fmt_money(valor_preview)}")
+        else:
+            col1.caption("⚠️ Formato inválido")
+
     with st.form("transferencia"):
-        col1, col2 = st.columns(2)
-        valor_str  = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00")
-        data_pag   = col2.date_input("Data de pagamento", value=date.today(), min_value=date.today())
+        data_pag   = st.date_input("Data de pagamento", value=date.today(), min_value=date.today())
         finalidade = st.text_input("Finalidade (opcional)", placeholder="ex: Aplicação fundo XYZ")
         enviar = st.form_submit_button("Enviar solicitação ✉️", use_container_width=True, type="primary")
 
     if enviar:
-        valor = parse_valor(valor_str)
+        valor = parse_valor(st.session_state.get("valor_ted", ""))
         if valor is None:
             st.error("Valor inválido. Use o formato: 1.500,00")
             st.stop()
