@@ -11,11 +11,23 @@ st.markdown("""
 .btg-box {
     background: #eff6ff; border: 1.5px solid #bfdbfe;
     border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
 }
 .btg-label  { font-size: 11px; font-weight: 600; color: #3b82f6;
                text-transform: uppercase; letter-spacing: .07em }
 .btg-numero { font-size: 26px; font-weight: 700; color: #1d4ed8; margin-top: 2px }
 .btg-nome   { font-size: 14px; color: #334155; margin-top: 3px }
+.dest-box {
+    background: #f8fafc; border: 1.5px solid #cbd5e1;
+    border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.dest-label { font-size: 11px; font-weight: 600; color: #64748b;
+               text-transform: uppercase; letter-spacing: .07em }
+.dest-banco { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 2px }
+.dest-detalhe { font-size: 13px; color: #475569; margin-top: 3px }
+.bank-logo  { width: 52px; height: 52px; object-fit: contain; border-radius: 8px;
+               flex-shrink: 0; margin-left: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -35,6 +47,39 @@ BANCOS = [
 ]
 BANCO_OPTS = [""] + [f"{nome}  ({cod})" for cod, nome in BANCOS]
 
+LOGOS = {
+    "001": "bb.com.br",
+    "237": "bradesco.com.br",
+    "104": "caixa.gov.br",
+    "745": "citibank.com.br",
+    "212": "original.com.br",
+    "336": "c6bank.com.br",
+    "077": "inter.co",
+    "341": "itau.com.br",
+    "323": "mercadopago.com.br",
+    "260": "nubank.com.br",
+    "208": "btgpactual.com",
+    "290": "pagbank.com.br",
+    "623": "bancopan.com.br",
+    "380": "picpay.com",
+    "633": "rendimento.com.br",
+    "422": "safra.com.br",
+    "033": "santander.com.br",
+    "748": "sicredi.com.br",
+    "756": "sicoob.com.br",
+    "197": "stone.com.br",
+    "655": "bv.com.br",
+    "348": "xpi.com.br",
+}
+
+def _logo_img(codigo):
+    token  = st.secrets.get("LOGO_TOKEN", "")
+    domain = LOGOS.get(str(codigo), "")
+    if not token or not domain:
+        return ""
+    return (f'<img src="https://img.logo.dev/{domain}?token={token}"'
+            f' class="bank-logo" onerror="this.style.display=\'none\'">')
+
 # ── SESSION STATE ─────────────────────────────────────────────────────────
 for k, v in [
     ("logado", False), ("banker_id", None), ("banker_nome", None),
@@ -53,11 +98,31 @@ def clear_nc():
         st.session_state.pop(k, None)
 
 def btg_box(conta_btg, nome):
+    logo = _logo_img("208")
     st.markdown(f"""
     <div class="btg-box">
-        <div class="btg-label">Conta BTG de origem</div>
-        <div class="btg-numero">{conta_btg}</div>
-        <div class="btg-nome">{nome}</div>
+        <div>
+            <div class="btg-label">Conta BTG de origem</div>
+            <div class="btg-numero">{conta_btg}</div>
+            <div class="btg-nome">{nome}</div>
+        </div>
+        {logo}
+    </div>
+    """, unsafe_allow_html=True)
+
+def dest_box(c):
+    logo = _logo_img(c.get("banco_codigo", ""))
+    st.markdown(f"""
+    <div class="dest-box">
+        <div>
+            <div class="dest-label">Conta de destino</div>
+            <div class="dest-banco">{c['banco_nome']}</div>
+            <div class="dest-detalhe">
+                Ag. {c['agencia']} &nbsp;·&nbsp; Cc. {c['conta']}-{c['digito']} ({c['tipo']})<br>
+                Titular: {c['titular']}
+            </div>
+        </div>
+        {logo}
     </div>
     """, unsafe_allow_html=True)
 
@@ -265,11 +330,7 @@ elif step == "transferencia":
         st.rerun()
 
     btg_box(cli["conta_btg"], cli["nome"])
-    st.info(
-        f"**Destino:** {c['banco_nome']}  ·  Ag. {c['agencia']}  ·  "
-        f"Cc. {c['conta']}-{c['digito']} ({c['tipo']})  \n"
-        f"Titular: {c['titular']}"
-    )
+    dest_box(c)
     if conta_nova:
         st.warning("⚠️ Conta nova — será cadastrada pela equipe após execução.")
 
