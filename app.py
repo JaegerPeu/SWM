@@ -58,7 +58,7 @@ LOGOS = {
     "341": "itau.com.br",
     "323": "mercadopago.com.br",
     "260": "nubank.com.br",
-    "208": "btgpactual.com",
+    "208": "https://img.logo.dev/btgpactual.com.br?token=pk_NnEQSuNZRQqnZX4MSFsm0A&retina=true",
     "290": "pagbank.com.br",
     "623": "bancopan.com.br",
     "380": "picpay.com",
