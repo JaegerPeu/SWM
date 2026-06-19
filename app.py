@@ -91,6 +91,18 @@ for k, v in [
 def fmt_money(val):
     return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def parse_valor(s):
+    s = s.strip().replace("R$", "").replace(" ", "")
+    if not s:
+        return None
+    if "," in s:
+        s = s.replace(".", "").replace(",", ".")
+    try:
+        v = float(s)
+        return v if v > 0 else None
+    except ValueError:
+        return None
+
 def clear_nc():
     for k in ["nc_banco","nc_b_cod","nc_b_nome","nc_agencia","nc_tipo",
               "nc_conta","nc_digito","nc_titular","nc_cpf","nc_titularidade","radio_contas"]:
@@ -349,12 +361,16 @@ elif step == "transferencia":
     st.subheader("3 · Dados da transferência")
     with st.form("transferencia"):
         col1, col2 = st.columns(2)
-        valor    = col1.number_input("Valor (R$)", min_value=0.01, step=0.01, format="%.2f")
-        data_pag = col2.date_input("Data de pagamento", value=date.today(), min_value=date.today())
+        valor_str  = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00")
+        data_pag   = col2.date_input("Data de pagamento", value=date.today(), min_value=date.today())
         finalidade = st.text_input("Finalidade (opcional)", placeholder="ex: Aplicação fundo XYZ")
         enviar = st.form_submit_button("Enviar solicitação ✉️", use_container_width=True, type="primary")
 
     if enviar:
+        valor = parse_valor(valor_str)
+        if valor is None:
+            st.error("Valor inválido. Use o formato: 1.500,00")
+            st.stop()
         dados = {
             "banker_nome":      st.session_state.banker_nome,
             "cliente_nome":     cli["nome"],
