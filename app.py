@@ -49,7 +49,7 @@ def fmt_money(val):
 
 def clear_nc():
     for k in ["nc_banco","nc_b_cod","nc_b_nome","nc_agencia","nc_tipo",
-              "nc_conta","nc_digito","nc_titular","nc_cpf","radio_contas"]:
+              "nc_conta","nc_digito","nc_titular","nc_cpf","nc_titularidade","radio_contas"]:
         st.session_state.pop(k, None)
 
 def btg_box(conta_btg, nome):
@@ -136,7 +136,7 @@ if step == "sucesso":
 
 # ── STEP 1: CLIENTE ───────────────────────────────────────────────────────
 elif step == "cliente":
-    st.subheader("1 · Selecione o cliente (CONTA ORIGEM)")
+    st.subheader("1 · Selecione o cliente")
     if st.session_state.clientes is None:
         with st.spinner("Carregando clientes..."):
             st.session_state.clientes = get_clientes(st.session_state.banker_id)
@@ -209,8 +209,15 @@ elif step == "destino":
         conta_n = c1.text_input("Conta",  key="nc_conta",  placeholder="ex: 12345")
         digito  = c2.text_input("Dígito", key="nc_digito", placeholder="0", max_chars=2)
 
-        titular  = st.text_input("Nome do titular",        key="nc_titular")
-        cpf_cnpj = st.text_input("CPF / CNPJ do titular", key="nc_cpf", placeholder="000.000.000-00")
+        titularidade = st.radio(
+            "Titularidade", ["Mesma titularidade", "Terceiro"],
+            key="nc_titularidade", horizontal=True
+        )
+
+        titular, cpf_cnpj = "", ""
+        if titularidade == "Terceiro":
+            titular  = st.text_input("Nome do titular",        key="nc_titular")
+            cpf_cnpj = st.text_input("CPF / CNPJ do titular", key="nc_cpf", placeholder="000.000.000-00")
 
         if st.button("Usar esta conta →", key="btn_nc", use_container_width=True, type="primary"):
             erros = []
@@ -218,8 +225,9 @@ elif step == "destino":
             if not agencia.strip():       erros.append("agência")
             if not conta_n.strip():       erros.append("conta")
             if not digito.strip():        erros.append("dígito")
-            if not titular.strip():       erros.append("titular")
-            if not cpf_cnpj.strip():      erros.append("CPF/CNPJ")
+            if titularidade == "Terceiro":
+                if not titular.strip():   erros.append("titular")
+                if not cpf_cnpj.strip():  erros.append("CPF/CNPJ")
             if banco_sel.startswith("Outro"):
                 if not b_cod_custom.strip():  erros.append("código do banco")
                 if not b_nome_custom.strip(): erros.append("nome do banco")
@@ -232,11 +240,13 @@ elif step == "destino":
                     parts  = banco_sel.rsplit("(", 1)
                     b_nome = parts[0].strip()
                     b_cod  = parts[1].rstrip(")").strip()
+                titular_val  = titular.strip()  if titularidade == "Terceiro" else "Mesma titularidade"
+                cpf_cnpj_val = cpf_cnpj.strip() if titularidade == "Terceiro" else "—"
                 st.session_state.conta_sel = {
-                    "banco_codigo":     b_cod,     "banco_nome":       b_nome,
-                    "agencia":          agencia.strip(), "conta":       conta_n.strip(),
-                    "digito":           digito.strip(),  "tipo":        tipo,
-                    "titular":          titular.strip(), "cpf_cnpj_titular": cpf_cnpj.strip(),
+                    "banco_codigo":     b_cod,           "banco_nome":       b_nome,
+                    "agencia":          agencia.strip(),  "conta":            conta_n.strip(),
+                    "digito":           digito.strip(),   "tipo":             tipo,
+                    "titular":          titular_val,      "cpf_cnpj_titular": cpf_cnpj_val,
                 }
                 st.session_state.conta_nova = True
                 st.session_state.step       = "transferencia"
