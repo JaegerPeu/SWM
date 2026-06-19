@@ -59,7 +59,7 @@ def _gerar_excel(dados):
         dados["banco_codigo"],
         dados["agencia"],
         f"{dados['conta_destino']}-{dados['digito']}",
-        dados["data_pagamento"],
+        dados["data_br"],
         float(dados["valor"]),
     ])
     buf = io.BytesIO()
