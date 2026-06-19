@@ -371,14 +371,19 @@ elif step == "transferencia":
 
     st.subheader("3 · Dados da transferência")
 
+    # auto-formata ao sair do campo
+    if "valor_ted" in st.session_state:
+        _raw = st.session_state["valor_ted"]
+        _parsed = parse_valor(_raw)
+        if _parsed is not None:
+            _fmt = fmt_money(_parsed)
+            if _raw != _fmt:
+                st.session_state["valor_ted"] = _fmt
+
     col1, col2 = st.columns(2)
     valor_str = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00", key="valor_ted")
-    valor_preview = parse_valor(valor_str)
-    if valor_str.strip():
-        if valor_preview:
-            col1.caption(f"R$ {fmt_money(valor_preview)}")
-        else:
-            col1.caption("⚠️ Formato inválido")
+    if valor_str.strip() and parse_valor(valor_str) is None:
+        col1.caption("⚠️ Formato inválido")
 
     with st.form("transferencia"):
         data_pag   = st.date_input("Data de pagamento", value=date.today(), min_value=date.today())
