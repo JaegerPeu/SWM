@@ -48,6 +48,7 @@ BANCOS = [
 BANCO_OPTS = [""] + [f"{nome}  ({cod})" for cod, nome in BANCOS]
 
 LOGOS = {
+    "SWM": "swmgestao.com.br",
     "001": "bb.com.br",
     "237": "bradesco.com.br",
     "104": "caixa.gov.br",
@@ -58,7 +59,7 @@ LOGOS = {
     "341": "itau.com.br",
     "323": "mercadopago.com.br",
     "260": "nubank.com.br",
-    "208": "https://img.logo.dev/btgpactual.com.br?token=pk_NnEQSuNZRQqnZX4MSFsm0A&retina=true",
+    "208": "btgpactual.com.br",
     "290": "pagbank.com.br",
     "623": "bancopan.com.br",
     "380": "picpay.com",
@@ -72,13 +73,15 @@ LOGOS = {
     "348": "xpi.com.br",
 }
 
-def _logo_img(codigo):
+def _logo_img(codigo, size=52):
     token  = st.secrets.get("LOGO_TOKEN", "")
-    domain = LOGOS.get(str(codigo), "")
-    if not token or not domain:
+    val    = LOGOS.get(str(codigo), "")
+    if not val:
         return ""
-    return (f'<img src="https://img.logo.dev/{domain}?token={token}"'
-            f' class="bank-logo" onerror="this.style.display=\'none\'">')
+    url = val if val.startswith("http") else f"https://img.logo.dev/{val}?token={token}&retina=true"
+    return (f'<img src="{url}" style="width:{size}px;height:{size}px;'
+            f'object-fit:contain;border-radius:8px;flex-shrink:0;margin-left:14px;"'
+            f' onerror="this.style.display=\'none\'">')
 
 # ── SESSION STATE ─────────────────────────────────────────────────────────
 for k, v in [
@@ -98,7 +101,7 @@ def clear_nc():
         st.session_state.pop(k, None)
 
 def btg_box(conta_btg, nome):
-    logo = _logo_img("208")
+    logo = _logo_img("SWM")
     st.markdown(f"""
     <div class="btg-box">
         <div>
@@ -246,6 +249,7 @@ elif step == "destino":
 
         if escolha != "+ Informar nova conta":
             idx = opts_c.index(escolha)
+            dest_box(contas[idx])
             if st.button("Usar esta conta →", use_container_width=True, type="primary"):
                 st.session_state.conta_sel  = contas[idx]
                 st.session_state.conta_nova = False
@@ -259,6 +263,18 @@ elif step == "destino":
         st.markdown("---")
         st.markdown("**Dados da nova conta**")
         banco_sel = st.selectbox("Banco", BANCO_OPTS, key="nc_banco")
+
+        if banco_sel and not banco_sel.startswith("Outro"):
+            parts   = banco_sel.rsplit("(", 1)
+            preview_cod  = parts[1].rstrip(")").strip()
+            preview_nome = parts[0].strip()
+            logo = _logo_img(preview_cod)
+            if logo:
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px;">'
+                    f'{logo}<span style="font-weight:600;color:#1e293b;">{preview_nome}</span></div>',
+                    unsafe_allow_html=True
+                )
 
         b_cod_custom, b_nome_custom = "", ""
         if banco_sel and banco_sel.startswith("Outro"):
