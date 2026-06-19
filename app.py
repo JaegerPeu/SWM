@@ -275,6 +275,7 @@ elif step == "transferencia":
         dados = {
             "banker_nome":      st.session_state.banker_nome,
             "cliente_nome":     cli["nome"],
+            "cliente_id":       cli["id"],
             "conta_btg_origem": cli["conta_btg"],
             "banco_codigo":     c["banco_codigo"],
             "banco_nome":       c["banco_nome"],

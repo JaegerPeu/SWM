@@ -75,3 +75,22 @@ def registrar_solicitacao(dados):
         "SIM" if dados["conta_nova"] else "NÃO",
         "pendente",
     ])
+    if dados["conta_nova"]:
+        _cadastrar_conta_nova(dados)
+
+def _cadastrar_conta_nova(dados):
+    ws = get_ss().worksheet("ContasTED")
+    rows = ws.get_all_records()
+    novo_id = max((int(r["id"]) for r in rows if str(r["id"]).isdigit()), default=0) + 1
+    ws.append_row([
+        str(novo_id),
+        dados["cliente_id"],
+        dados["banco_codigo"],
+        dados["banco_nome"],
+        dados["agencia"],
+        dados["conta_destino"],
+        dados["digito"],
+        dados["tipo"],
+        dados["titular"],
+        dados["cpf_cnpj_titular"],
+    ])

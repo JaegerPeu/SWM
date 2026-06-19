@@ -1,5 +1,10 @@
 import smtplib
+import io
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import openpyxl
 import streamlit as st
 
 DESTINATARIO = "middle@swmgestao.com.br"
@@ -9,9 +14,16 @@ def _montar(dados):
         "SOLICITAÇÃO DE TED",
         "══════════════════",
         "",
-        f"Banker:             {dados['banker_nome']}",
-        f"Cliente:            {dados['cliente_nome']}",
-        f"Conta BTG (origem): {dados['conta_btg_origem']}",
+        f"Banker:   {dados['banker_nome']}",
+        f"Cliente:  {dados['cliente_nome']}",
+        "",
+        "ORIGEM",
+        "──────",
+        "Banco:    208 — BTG Pactual",
+        "Agência:  0001",
+        f"Conta:    {dados['conta_btg_origem']}",
+        "Tipo:     Corrente",
+        f"Titular:  {dados['cliente_nome']}",
         "",
         "DESTINO",
         "───────",
@@ -37,20 +49,46 @@ def _montar(dados):
     assunto = f"{prefixo}{dados['cliente_nome']} — R$ {dados['valor_fmt']} — {dados['banker_nome']}"
     return assunto, "\n".join(linhas)
 
+def _gerar_excel(dados):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "TED"
+    ws.append(["conta_btg", "numero_banco", "agencia", "conta_destino", "data_ted", "valor_ted"])
+    ws.append([
+        dados["conta_btg_origem"],
+        dados["banco_codigo"],
+        dados["agencia"],
+        f"{dados['conta_destino']}-{dados['digito']}",
+        dados["data_pagamento"],
+        float(dados["valor"]),
+    ])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
+
 def enviar_email(dados):
     assunto, corpo = _montar(dados)
 
-    # MOCK_EMAIL = true nos secrets → só exibe, não envia
     if st.secrets.get("MOCK_EMAIL", False):
         return {"mock": True, "assunto": assunto, "corpo": corpo}
 
     remetente = st.secrets["EMAIL_FROM"]
     senha     = st.secrets["EMAIL_PASSWORD"]
 
-    msg = MIMEText(corpo, "plain", "utf-8")
+    msg = MIMEMultipart()
     msg["Subject"] = assunto
     msg["From"]    = remetente
     msg["To"]      = DESTINATARIO
+    msg.attach(MIMEText(corpo, "plain", "utf-8"))
+
+    excel_bytes = _gerar_excel(dados)
+    nome_arquivo = f"TED_{dados['cliente_nome'].replace(' ', '_')}_{dados['data_pagamento']}.xlsx"
+    part = MIMEBase("application", "octet-stream")
+    part.set_payload(excel_bytes)
+    encoders.encode_base64(part)
+    part.add_header("Content-Disposition", f'attachment; filename="{nome_arquivo}"')
+    msg.attach(part)
 
     with smtplib.SMTP("smtp.gmail.com", 587) as srv:
         srv.ehlo()
