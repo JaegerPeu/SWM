@@ -11,7 +11,7 @@ st.markdown("""
 .btg-box {
     background: #eff6ff; border: 1.5px solid #bfdbfe;
     border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: stretch; justify-content: space-between;
 }
 .btg-label  { font-size: 11px; font-weight: 600; color: #3b82f6;
                text-transform: uppercase; letter-spacing: .07em }
@@ -20,14 +20,15 @@ st.markdown("""
 .dest-box {
     background: #f8fafc; border: 1.5px solid #cbd5e1;
     border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: stretch; justify-content: space-between;
 }
 .dest-label { font-size: 11px; font-weight: 600; color: #64748b;
                text-transform: uppercase; letter-spacing: .07em }
 .dest-banco { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 2px }
 .dest-detalhe { font-size: 13px; color: #475569; margin-top: 3px }
-.bank-logo  { width: 52px; height: 52px; object-fit: contain; border-radius: 8px;
-               flex-shrink: 0; margin-left: 14px; }
+.box-content { display: flex; flex-direction: column; justify-content: center; }
+.bank-logo   { height: 100%; width: auto; max-width: 90px; object-fit: contain;
+                border-radius: 8px; flex-shrink: 0; margin-left: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -272,7 +273,7 @@ elif step == "destino":
             if logo:
                 st.markdown(
                     f'<div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px;">'
-                    f'{logo}<span style="font-weight:600;color:#1e293b;">{preview_nome}</span></div>',
+                    f'{logo}<span style="font-weight:600;color:inherit;">{preview_nome}</span></div>',
                     unsafe_allow_html=True
                 )
 
