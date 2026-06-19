@@ -9,8 +9,8 @@ st.markdown("""
 <style>
 #MainMenu, footer, header { visibility: hidden }
 .btg-box, .dest-box {
-    border-radius: 10px; padding: 16px 20px; margin: 10px 0 16px 0;
-    display: flex; align-items: center; justify-content: space-between; min-height: 84px;
+    border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
+    display: flex; align-items: center; justify-content: space-between; min-height: 96px;
 }
 .btg-box  { background: #eff6ff; border: 1.5px solid #bfdbfe; }
 .dest-box { background: #f8fafc; border: 1.5px solid #cbd5e1; }
@@ -23,7 +23,7 @@ st.markdown("""
 .dest-banco   { font-size: 22px; font-weight: 700; color: #1e293b; margin-top: 3px }
 .dest-detalhe { font-size: 14px; color: #475569; margin-top: 4px; line-height: 1.55 }
 .box-content { display: flex; flex-direction: column; justify-content: center; }
-.bank-logo   { height: 64px; width: auto; max-width: 100px; object-fit: contain;
+.bank-logo   { height: 76px; width: auto; max-width: 110px; object-fit: contain;
                 border-radius: 8px; flex-shrink: 0; margin-left: 16px; }
 </style>
 """, unsafe_allow_html=True)
