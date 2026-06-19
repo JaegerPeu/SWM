@@ -39,7 +39,7 @@ BANCO_OPTS = [""] + [f"{nome}  ({cod})" for cod, nome in BANCOS]
 for k, v in [
     ("logado", False), ("banker_id", None), ("banker_nome", None),
     ("step", "cliente"), ("clientes", None),
-    ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None),
+    ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None), ("sol_mock", None),
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
@@ -98,7 +98,14 @@ step = st.session_state.step
 # ── SUCESSO ───────────────────────────────────────────────────────────────
 if step == "sucesso":
     d = st.session_state.sol
-    st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
+    mock = st.session_state.sol_mock
+    if mock:
+        st.success("✅ Solicitação registrada! (modo teste — email não enviado)")
+        with st.expander("📧 Email que seria enviado", expanded=True):
+            st.caption(f"Assunto: {mock['assunto']}")
+            st.code(mock["corpo"], language=None)
+    else:
+        st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
     if d["conta_nova"]:
         st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
     st.markdown("**Resumo da solicitação**")
@@ -123,6 +130,7 @@ if step == "sucesso":
         st.session_state.conta_sel   = None
         st.session_state.conta_nova  = False
         st.session_state.sol         = None
+        st.session_state.sol_mock    = None
         clear_nc()
         st.rerun()
 
@@ -286,9 +294,10 @@ elif step == "transferencia":
         with st.spinner("Enviando..."):
             try:
                 registrar_solicitacao(dados)
-                enviar_email(dados)
-                st.session_state.sol  = dados
-                st.session_state.step = "sucesso"
+                resultado = enviar_email(dados)
+                st.session_state.sol      = dados
+                st.session_state.sol_mock = resultado if resultado and resultado.get("mock") else None
+                st.session_state.step     = "sucesso"
                 clear_nc()
                 st.rerun()
             except Exception as e:

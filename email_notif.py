@@ -4,7 +4,7 @@ import streamlit as st
 
 DESTINATARIO = "middle@swmgestao.com.br"
 
-def enviar_email(dados):
+def _montar(dados):
     linhas = [
         "SOLICITAÇÃO DE TED",
         "══════════════════",
@@ -29,14 +29,20 @@ def enviar_email(dados):
     ]
     if dados.get("finalidade"):
         linhas.append(f"Finalidade:     {dados['finalidade']}")
-
     if dados["conta_nova"]:
         linhas.insert(0, "")
         linhas.insert(0, "⚠️  CONTA NOVA — cadastrar em ContasTED após execução")
 
-    prefixo  = "[TED][CONTA NOVA] " if dados["conta_nova"] else "[TED] "
-    assunto  = f"{prefixo}{dados['cliente_nome']} — R$ {dados['valor_fmt']} — {dados['banker_nome']}"
-    corpo    = "\n".join(linhas)
+    prefixo = "[TED][CONTA NOVA] " if dados["conta_nova"] else "[TED] "
+    assunto = f"{prefixo}{dados['cliente_nome']} — R$ {dados['valor_fmt']} — {dados['banker_nome']}"
+    return assunto, "\n".join(linhas)
+
+def enviar_email(dados):
+    assunto, corpo = _montar(dados)
+
+    # MOCK_EMAIL = true nos secrets → só exibe, não envia
+    if st.secrets.get("MOCK_EMAIL", False):
+        return {"mock": True, "assunto": assunto, "corpo": corpo}
 
     remetente = st.secrets["EMAIL_FROM"]
     senha     = st.secrets["EMAIL_PASSWORD"]
@@ -51,3 +57,5 @@ def enviar_email(dados):
         srv.starttls()
         srv.login(remetente, senha)
         srv.send_message(msg)
+
+    return {"mock": False}
