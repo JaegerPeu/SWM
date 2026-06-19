@@ -114,8 +114,8 @@ def dest_box(c):
     <div class="dest-box">
         <div class="box-content">
             <div class="dest-label">Conta de destino</div>
-            <div class="dest-banco" style="color:inherit;">{c['banco_nome']}</div>
-            <div class="dest-detalhe" style="color:inherit;opacity:.75;">
+            <div class="dest-banco">{c['banco_nome']}</div>
+            <div class="dest-detalhe">
                 Ag. {c['agencia']} &nbsp;·&nbsp; Cc. {c['conta']}-{c['digito']} ({c['tipo']})<br>
                 Titular: {c['titular']}
             </div>
