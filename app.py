@@ -72,7 +72,8 @@ LOGOS = {
 
 def _logo_img(codigo):
     token = st.secrets.get("LOGO_TOKEN", "")
-    val   = LOGOS.get(str(codigo), "")
+    s     = str(codigo).strip()
+    val   = LOGOS.get(s) or LOGOS.get(s.zfill(3), "")
     if not val:
         return ""
     url = val if val.startswith("http") else f"https://img.logo.dev/{val}?token={token}&retina=true"
