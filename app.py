@@ -68,6 +68,9 @@ LOGOS = {
     "197": "stone.com.br",
     "655": "bv.com.br",
     "348": "xpi.com.br",
+    "310": "vortx.com.br",
+
+
 }
 
 def _logo_img(codigo):
