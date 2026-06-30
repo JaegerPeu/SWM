@@ -31,11 +31,20 @@ def login_banker(usuario, senha):
 
 def get_clientes(banker_id):
     rows = get_ss().worksheet("Clientes").get_all_records()
-    clientes = [
-        {"id": str(r["id"]), "nome": str(r["nome"]), "conta_btg": str(r["conta_btg"])}
-        for r in rows
-        if str(r["banker_id"]).strip() == str(banker_id).strip()
-    ]
+    seen = set()
+    clientes = []
+    for r in rows:
+        if str(r["banker_id"]).strip() != str(banker_id).strip():
+            continue
+        cid = str(r["id"])
+        if cid in seen:
+            continue
+        seen.add(cid)
+        clientes.append({
+            "id": cid,
+            "nome": str(r["nome"]),
+            "conta_btg": str(r["conta_btg"]),
+        })
     return sorted(clientes, key=lambda x: x["nome"])
 
 def get_contas(cliente_id):
