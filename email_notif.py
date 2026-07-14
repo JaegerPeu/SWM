@@ -1,7 +1,6 @@
 import smtplib
 import io
 import json
-import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -10,7 +9,7 @@ import openpyxl
 import streamlit as st
 
 DESTINATARIO = "middle@swmgestao.com.br"
-RELAY_SUBJECT_PREFIX = "[TED-CONFIRM] "
+RELAY_SUBJECT_PREFIX = "[TED-CONFIRM]"
 
 def _montar(dados):
     linhas = [
@@ -119,23 +118,21 @@ def enviar_confirmacao_banker(dados):
         return {"enviado": True, "mock": True, "assunto": assunto, "corpo": corpo}
 
     # Relay: manda um e-mail "técnico" pro próprio Outlook (mesma caixa DESTINATARIO),
-    # com o payload em base64 no assunto. Um fluxo no Power Automate ("Quando um novo
-    # e-mail chegar") filtra pelo prefixo, decodifica e manda a confirmação de verdade
-    # pro banker via Outlook — evita precisar do gatilho HTTP (Premium).
+    # com o payload em JSON puro no CORPO (o assunto do gatilho pode vir truncado/
+    # depender de funções não disponíveis no Power Automate; o corpo chega intacto,
+    # como texto puro). Um fluxo no Power Automate ("Quando um novo e-mail chegar")
+    # filtra pelo assunto fixo, lê o corpo e manda a confirmação de verdade pro banker
+    # via Outlook — evita precisar do gatilho HTTP (Premium).
     payload = json.dumps({"to": email_banker, "subject": assunto, "body": corpo})
-    payload_b64 = base64.b64encode(payload.encode("utf-8")).decode("ascii")
 
     remetente = st.secrets["EMAIL_FROM"]
     senha     = st.secrets["EMAIL_PASSWORD"]
 
     msg = MIMEMultipart()
-    msg["Subject"] = f"{RELAY_SUBJECT_PREFIX}{payload_b64}"
+    msg["Subject"] = RELAY_SUBJECT_PREFIX
     msg["From"]    = remetente
     msg["To"]      = DESTINATARIO
-    msg.attach(MIMEText(
-        "Payload de confirmação de TED — processado automaticamente pelo Power Automate.",
-        "plain", "utf-8",
-    ))
+    msg.attach(MIMEText(payload, "plain", "utf-8"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as srv:
