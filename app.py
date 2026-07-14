@@ -1,6 +1,6 @@
 import streamlit as st
 from sheets import login_banker, get_clientes, get_contas, registrar_solicitacao
-from email_notif import enviar_email
+from email_notif import enviar_email, enviar_confirmacao_banker
 from datetime import date
 
 st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layout="centered")
@@ -97,9 +97,10 @@ def _logo_img(codigo):
 
 # ── SESSION STATE ─────────────────────────────────────────────────────────
 for k, v in [
-    ("logado", False), ("banker_id", None), ("banker_nome", None),
+    ("logado", False), ("banker_id", None), ("banker_nome", None), ("banker_email", ""),
     ("step", "cliente"), ("clientes", None),
     ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None), ("sol_mock", None),
+    ("sol_conf", None),
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
@@ -181,6 +182,7 @@ if not st.session_state.logado:
                 st.session_state.logado      = True
                 st.session_state.banker_id   = res["id"]
                 st.session_state.banker_nome = res["nome"]
+                st.session_state.banker_email = res.get("email", "")
                 st.rerun()
             else:
                 st.error(res["erro"])
@@ -210,6 +212,18 @@ if step == "sucesso":
         st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
     if d["conta_nova"]:
         st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
+
+    conf = st.session_state.sol_conf
+    if conf and conf.get("enviado"):
+        if conf.get("mock"):
+            with st.expander("📧 Confirmação que seria enviada para você", expanded=False):
+                st.caption(f"Assunto: {conf['assunto']}")
+                st.code(conf["corpo"], language=None)
+        else:
+            st.info(f"📧 Confirmação de recebimento enviada para {d['banker_email']}.")
+    elif conf and conf.get("motivo") == "sem_email":
+        st.warning("⚠️ Seu e-mail não está cadastrado na aba Bankers — confirmação não enviada. Peça para cadastrarem.")
+
     st.markdown("**Resumo da solicitação**")
     for label, val in [
         ("Cliente",            d["cliente_nome"]),
@@ -233,6 +247,7 @@ if step == "sucesso":
         st.session_state.conta_nova  = False
         st.session_state.sol         = None
         st.session_state.sol_mock    = None
+        st.session_state.sol_conf    = None
         st.session_state.pop("valor_ted", None)
         clear_nc()
         st.rerun()
@@ -413,6 +428,7 @@ elif step == "transferencia":
             st.stop()
         dados = {
             "banker_nome":      st.session_state.banker_nome,
+            "banker_email":     st.session_state.banker_email,
             "cliente_nome":     cli["nome"],
             "cliente_id":       cli["id"],
             "conta_btg_origem": cli["conta_btg"],
@@ -435,8 +451,10 @@ elif step == "transferencia":
             try:
                 registrar_solicitacao(dados)
                 resultado = enviar_email(dados)
+                conf      = enviar_confirmacao_banker(dados)
                 st.session_state.sol      = dados
                 st.session_state.sol_mock = resultado if resultado and resultado.get("mock") else None
+                st.session_state.sol_conf = conf
                 st.session_state.step     = "sucesso"
                 clear_nc()
                 st.rerun()

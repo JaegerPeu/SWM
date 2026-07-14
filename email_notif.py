@@ -97,3 +97,37 @@ def enviar_email(dados):
         srv.send_message(msg)
 
     return {"mock": False}
+
+def enviar_confirmacao_banker(dados):
+    email_banker = (dados.get("banker_email") or "").strip()
+    if not email_banker:
+        return {"enviado": False, "motivo": "sem_email"}
+
+    assunto = f"[TED] Recebemos sua solicitação — {dados['cliente_nome']} — R$ {dados['valor_fmt']}"
+    corpo = (
+        f"Olá, {dados['banker_nome']}!\n\n"
+        f"Recebemos sua solicitação de TED para o cliente {dados['cliente_nome']}, "
+        f"no valor de R$ {dados['valor_fmt']}, com pagamento previsto para {dados['data_br']}.\n\n"
+        f"A equipe de operações já foi notificada e vai processar a transferência.\n\n"
+        f"Este é um e-mail automático de confirmação de recebimento."
+    )
+
+    if st.secrets.get("MOCK_EMAIL", False):
+        return {"enviado": True, "mock": True, "assunto": assunto, "corpo": corpo}
+
+    remetente = st.secrets["EMAIL_FROM"]
+    senha     = st.secrets["EMAIL_PASSWORD"]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = assunto
+    msg["From"]    = remetente
+    msg["To"]      = email_banker
+    msg.attach(MIMEText(corpo, "plain", "utf-8"))
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as srv:
+        srv.ehlo()
+        srv.starttls()
+        srv.login(remetente, senha)
+        srv.send_message(msg)
+
+    return {"enviado": True, "mock": False}

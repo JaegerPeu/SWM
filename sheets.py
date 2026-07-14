@@ -24,7 +24,12 @@ def login_banker(usuario, senha):
         for r in rows:
             if (str(r["login"]).strip().lower() == usuario.lower() and
                 str(r["senha"]).strip() == senha):
-                return {"ok": True, "id": str(r["id"]), "nome": str(r["nome"])}
+                return {
+                    "ok": True,
+                    "id": str(r["id"]),
+                    "nome": str(r["nome"]),
+                    "email": str(r.get("email", "")).strip(),
+                }
         return {"ok": False, "erro": "Usuário ou senha inválidos."}
     except Exception as e:
         return {"ok": False, "erro": f"Erro ao acessar base: {e}"}
