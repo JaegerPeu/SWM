@@ -10,6 +10,7 @@ import streamlit as st
 
 DESTINATARIO = "middle@swmgestao.com.br"
 RELAY_SUBJECT_PREFIX = "[TED-CONFIRM]"
+RELAY_TO_EMAIL = "pedro.duarte@swmgestao.com.br"
 
 def _montar(dados):
     linhas = [
@@ -117,12 +118,15 @@ def enviar_confirmacao_banker(dados):
     if st.secrets.get("MOCK_EMAIL", False):
         return {"enviado": True, "mock": True, "assunto": assunto, "corpo": corpo}
 
-    # Relay: manda um e-mail "técnico" pro próprio Outlook (mesma caixa DESTINATARIO),
-    # com o payload em JSON puro no CORPO (o assunto do gatilho pode vir truncado/
-    # depender de funções não disponíveis no Power Automate; o corpo chega intacto,
-    # como texto puro). Um fluxo no Power Automate ("Quando um novo e-mail chegar")
-    # filtra pelo assunto fixo, lê o corpo e manda a confirmação de verdade pro banker
-    # via Outlook — evita precisar do gatilho HTTP (Premium).
+    # Relay: manda um e-mail "técnico" pro Outlook de quem opera o fluxo (RELAY_TO_EMAIL),
+    # não pra caixa compartilhada DESTINATARIO — várias pessoas têm acesso a ela, e
+    # apagar depois de processado só limpa a cópia de quem está com o Power Automate
+    # conectado, poluindo a caixa dos outros. Com o payload em JSON puro no CORPO
+    # (o assunto do gatilho pode vir truncado/depender de funções não disponíveis no
+    # Power Automate; o corpo chega intacto, como texto puro). Um fluxo no Power
+    # Automate ("Quando um novo e-mail chegar") filtra pelo assunto fixo, lê o corpo
+    # e manda a confirmação de verdade pro banker via Outlook — evita precisar do
+    # gatilho HTTP (Premium).
     payload = json.dumps({"to": email_banker, "subject": assunto, "body": corpo})
 
     remetente = st.secrets["EMAIL_FROM"]
@@ -131,7 +135,7 @@ def enviar_confirmacao_banker(dados):
     msg = MIMEMultipart()
     msg["Subject"] = RELAY_SUBJECT_PREFIX
     msg["From"]    = remetente
-    msg["To"]      = DESTINATARIO
+    msg["To"]      = RELAY_TO_EMAIL
     msg.attach(MIMEText(payload, "plain", "utf-8"))
 
     try:
