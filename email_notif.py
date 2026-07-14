@@ -1,5 +1,7 @@
 import smtplib
 import io
+import json
+import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -8,6 +10,7 @@ import openpyxl
 import streamlit as st
 
 DESTINATARIO = "middle@swmgestao.com.br"
+RELAY_SUBJECT_PREFIX = "[TED-CONFIRM] "
 
 def _montar(dados):
     linhas = [
@@ -105,29 +108,41 @@ def enviar_confirmacao_banker(dados):
 
     assunto = f"[TED] Recebemos sua solicitação — {dados['cliente_nome']} — R$ {dados['valor_fmt']}"
     corpo = (
-        f"Olá, {dados['banker_nome']}!\n\n"
+        f"Olá, {dados['banker_nome']}!<br><br>"
         f"Recebemos sua solicitação de TED para o cliente {dados['cliente_nome']}, "
-        f"no valor de R$ {dados['valor_fmt']}, com pagamento previsto para {dados['data_br']}.\n\n"
-        f"A equipe de operações já foi notificada e vai processar a transferência.\n\n"
+        f"no valor de R$ {dados['valor_fmt']}, com pagamento previsto para {dados['data_br']}.<br><br>"
+        f"A equipe de operações já foi notificada e vai processar a transferência.<br><br>"
         f"Este é um e-mail automático de confirmação de recebimento."
     )
 
     if st.secrets.get("MOCK_EMAIL", False):
         return {"enviado": True, "mock": True, "assunto": assunto, "corpo": corpo}
 
+    # Relay: manda um e-mail "técnico" pro próprio Outlook (mesma caixa DESTINATARIO),
+    # com o payload em base64 no assunto. Um fluxo no Power Automate ("Quando um novo
+    # e-mail chegar") filtra pelo prefixo, decodifica e manda a confirmação de verdade
+    # pro banker via Outlook — evita precisar do gatilho HTTP (Premium).
+    payload = json.dumps({"to": email_banker, "subject": assunto, "body": corpo})
+    payload_b64 = base64.b64encode(payload.encode("utf-8")).decode("ascii")
+
     remetente = st.secrets["EMAIL_FROM"]
     senha     = st.secrets["EMAIL_PASSWORD"]
 
     msg = MIMEMultipart()
-    msg["Subject"] = assunto
+    msg["Subject"] = f"{RELAY_SUBJECT_PREFIX}{payload_b64}"
     msg["From"]    = remetente
-    msg["To"]      = email_banker
-    msg.attach(MIMEText(corpo, "plain", "utf-8"))
+    msg["To"]      = DESTINATARIO
+    msg.attach(MIMEText(
+        "Payload de confirmação de TED — processado automaticamente pelo Power Automate.",
+        "plain", "utf-8",
+    ))
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as srv:
-        srv.ehlo()
-        srv.starttls()
-        srv.login(remetente, senha)
-        srv.send_message(msg)
-
-    return {"enviado": True, "mock": False}
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as srv:
+            srv.ehlo()
+            srv.starttls()
+            srv.login(remetente, senha)
+            srv.send_message(msg)
+        return {"enviado": True, "mock": False}
+    except Exception as e:
+        return {"enviado": False, "motivo": "erro_relay", "detalhe": str(e)}

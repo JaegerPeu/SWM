@@ -223,6 +223,8 @@ if step == "sucesso":
             st.info(f"📧 Confirmação de recebimento enviada para {d['banker_email']}.")
     elif conf and conf.get("motivo") == "sem_email":
         st.warning("⚠️ Seu e-mail não está cadastrado na aba Bankers — confirmação não enviada. Peça para cadastrarem.")
+    elif conf and conf.get("motivo") == "erro_relay":
+        st.warning("⚠️ Não consegui enviar a confirmação agora. A solicitação foi registrada normalmente.")
 
     st.markdown("**Resumo da solicitação**")
     for label, val in [
