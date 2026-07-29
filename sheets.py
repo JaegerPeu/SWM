@@ -87,7 +87,7 @@ def registrar_solicitacao(dados):
         float(dados["valor"]),
         dados["data_pagamento"],
         "SIM" if dados["conta_nova"] else "NÃO",
-        "pendente",
+        "Pendente",
     ])
     if dados["conta_nova"]:
         _cadastrar_conta_nova(dados)
