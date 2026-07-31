@@ -18,6 +18,7 @@ def get_gc():
     )
     return gspread.authorize(creds)
 
+@st.cache_resource(ttl=300)
 def get_ss():
     return get_gc().open_by_key(st.secrets["SHEET_ID"])
 
@@ -37,6 +38,7 @@ def login_banker(usuario, senha):
     except Exception as e:
         return {"ok": False, "erro": f"Erro ao acessar base: {e}"}
 
+@st.cache_data(ttl=15)
 def get_clientes(banker_id):
     rows = get_ss().worksheet("Clientes").get_all_records()
     seen = set()
@@ -55,6 +57,7 @@ def get_clientes(banker_id):
         })
     return sorted(clientes, key=lambda x: x["nome"])
 
+@st.cache_data(ttl=15)
 def get_contas(cliente_id):
     rows = get_ss().worksheet("ContasTED").get_all_records()
     return [
@@ -98,6 +101,7 @@ def registrar_solicitacao(dados):
     ])
     if dados["conta_nova"]:
         _cadastrar_conta_nova(dados)
+    get_solicitacoes_abertas.clear()
 
 def _cadastrar_conta_nova(dados):
     ws = get_ss().worksheet("ContasTED")
@@ -115,9 +119,11 @@ def _cadastrar_conta_nova(dados):
         dados["titular"],
         dados["cpf_cnpj_titular"],
     ])
+    get_contas.clear()
 
 STATUS_ABERTOS = {"pendente", "em processo"}
 
+@st.cache_data(ttl=15)
 def get_solicitacoes_abertas(banker_id):
     # Escopo por cliente liberado no login (mesma regra do get_clientes), não por
     # quem criou a solicitação — um banker pode ver TEDs abertas de colegas pro
@@ -161,5 +167,6 @@ def solicitar_cancelamento(sol_id):
     for i, linha in enumerate(linhas):
         if len(linha) > col_id and linha[col_id].strip() == str(sol_id):
             ws.update_cell(i + 2, col_canc + 1, datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"))
+            get_solicitacoes_abertas.clear()
             return True
     return False
