@@ -2,6 +2,9 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("America/Sao_Paulo")
 
 SCOPES = [
     "https://spreadsheets.google.com/feeds",
@@ -71,8 +74,11 @@ def get_contas(cliente_id):
     ]
 
 def registrar_solicitacao(dados):
-    get_ss().worksheet("Solicitacoes").append_row([
-        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+    ws = get_ss().worksheet("Solicitacoes")
+    rows = ws.get_all_records()
+    novo_id = max((int(r["id"]) for r in rows if str(r.get("id", "")).isdigit()), default=0) + 1
+    ws.append_row([
+        datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"),
         dados["banker_nome"],
         dados["cliente_nome"],
         dados["conta_btg_origem"],
@@ -87,7 +93,8 @@ def registrar_solicitacao(dados):
         float(dados["valor"]),
         dados["data_pagamento"],
         "SIM" if dados["conta_nova"] else "NÃO",
-        "Pendente",
+        "pendente",
+        novo_id,
     ])
     if dados["conta_nova"]:
         _cadastrar_conta_nova(dados)
@@ -108,3 +115,45 @@ def _cadastrar_conta_nova(dados):
         dados["titular"],
         dados["cpf_cnpj_titular"],
     ])
+
+STATUS_ABERTOS = {"pendente", "em processo"}
+
+def get_solicitacoes_abertas(banker_nome):
+    rows = get_ss().worksheet("Solicitacoes").get_all_records()
+    abertas = []
+    for r in rows:
+        if str(r.get("banker_nome", "")).strip() != banker_nome.strip():
+            continue
+        status = str(r.get("status", "")).strip().lower()
+        if status not in STATUS_ABERTOS:
+            continue
+        abertas.append({
+            "id":                     str(r["id"]),
+            "cliente_nome":           str(r["cliente_nome"]),
+            "banco_nome":             str(r["banco_nome"]),
+            "titular":                str(r["titular"]),
+            "valor":                  float(r["valor"]),
+            "data_pagamento":         str(r["data_pagamento"]),
+            "data":                   str(r["data"]),
+            "status":                 status,
+            "cancelamento_solicitado": str(r.get("cancelamento_solicitado", "")).strip(),
+        })
+    return abertas
+
+def solicitar_cancelamento(sol_id):
+    ws = get_ss().worksheet("Solicitacoes")
+    valores = ws.get_all_values()
+    header, linhas = valores[0], valores[1:]
+    try:
+        col_id   = header.index("id")
+        col_canc = header.index("cancelamento_solicitado")
+    except ValueError as e:
+        raise RuntimeError(
+            f"Coluna não encontrada em 'Solicitacoes': {e}. "
+            "Confira se o header 'cancelamento_solicitado' foi criado corretamente na planilha."
+        )
+    for i, linha in enumerate(linhas):
+        if len(linha) > col_id and linha[col_id].strip() == str(sol_id):
+            ws.update_cell(i + 2, col_canc + 1, datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"))
+            return True
+    return False

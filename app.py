@@ -1,7 +1,14 @@
 import streamlit as st
-from sheets import login_banker, get_clientes, get_contas, registrar_solicitacao
-from email_notif import enviar_email, enviar_confirmacao_banker
-from datetime import date
+from sheets import (
+    login_banker, get_clientes, get_contas, registrar_solicitacao,
+    get_solicitacoes_abertas, solicitar_cancelamento,
+)
+from email_notif import enviar_email, enviar_confirmacao_banker, enviar_email_cancelamento
+from datetime import date, datetime, timedelta, time as dtime
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("America/Sao_Paulo")
+CUTOFF_HOUR = 16
 
 st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layout="centered")
 
@@ -25,6 +32,13 @@ st.markdown("""
 .box-content { display: flex; flex-direction: column; justify-content: center; }
 .bank-logo   { height: 76px; width: auto; max-width: 110px; object-fit: contain;
                 border-radius: 8px; flex-shrink: 0; margin-left: 16px; }
+.sol-card {
+    border-radius: 10px; padding: 10px 14px; margin: 8px 0;
+    background: #f8fafc; border: 1.5px solid #cbd5e1;
+}
+.sol-cliente { font-size: 15px; font-weight: 700; color: #1e293b; }
+.sol-detalhe { font-size: 13px; color: #475569; margin-top: 2px; }
+.sol-data    { font-size: 12px; color: #64748b; margin-top: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -100,7 +114,7 @@ for k, v in [
     ("logado", False), ("banker_id", None), ("banker_nome", None), ("banker_email", ""),
     ("step", "cliente"), ("clientes", None),
     ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None), ("sol_mock", None),
-    ("sol_conf", None),
+    ("sol_conf", None), ("cancel_pending_id", None),
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
@@ -129,6 +143,13 @@ def parse_valor(s):
         return v if v > 0 else None
     except ValueError:
         return None
+
+def calcular_prazo_cancelamento(data_solicitacao_str):
+    dt = datetime.strptime(data_solicitacao_str, "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
+    if dt.time() < dtime(CUTOFF_HOUR, 0):
+        cutoff_hoje = dt.replace(hour=CUTOFF_HOUR, minute=0, second=0, microsecond=0)
+        return min(dt + timedelta(minutes=30), cutoff_hoje)
+    return (dt + timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
 
 def clear_nc():
     for k in ["nc_banco","nc_b_cod","nc_b_nome","nc_agencia","nc_tipo",
@@ -164,6 +185,71 @@ def dest_box(c):
     </div>
     """, unsafe_allow_html=True)
 
+def solicitacao_card(s):
+    sid = s["id"]
+    st.markdown(f"""
+    <div class="sol-card">
+        <div class="sol-cliente">{s['cliente_nome']} — R$ {fmt_money(s['valor'])}</div>
+        <div class="sol-detalhe">{s['banco_nome']} · {s['titular']}</div>
+        <div class="sol-data">Pagamento: {s['data_pagamento']}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if s["cancelamento_solicitado"]:
+        st.caption(f"🚫 Cancelamento solicitado em {s['cancelamento_solicitado']}")
+        return
+
+    prazo = calcular_prazo_cancelamento(s["data"])
+    agora = datetime.now(TZ)
+
+    if agora >= prazo:
+        st.caption("Prazo de cancelamento encerrado")
+        return
+
+    if st.session_state.get("cancel_pending_id") == sid:
+        c1, c2 = st.columns(2)
+        if c1.button("Sim, cancelar", key=f"yes_{sid}", type="primary", use_container_width=True):
+            solicitar_cancelamento(sid)
+            enviar_email_cancelamento({
+                "banker_nome":       st.session_state.banker_nome,
+                "cliente_nome":      s["cliente_nome"],
+                "valor_fmt":         fmt_money(s["valor"]),
+                "data_pagamento":    s["data_pagamento"],
+                "id":                sid,
+                "hora_cancelamento": datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"),
+            })
+            st.session_state.cancel_pending_id = None
+            st.rerun()
+        if c2.button("Voltar", key=f"no_{sid}", use_container_width=True):
+            st.session_state.cancel_pending_id = None
+            st.rerun()
+    else:
+        restante_min = int((prazo - agora).total_seconds() // 60)
+        st.caption(f"⏳ {restante_min} min pra solicitar cancelamento")
+        if st.button("Solicitar cancelamento", key=f"cancel_{sid}", use_container_width=True):
+            st.session_state.cancel_pending_id = sid
+            st.rerun()
+
+def render_board():
+    st.subheader("Minhas solicitações em aberto")
+    abertas = get_solicitacoes_abertas(st.session_state.banker_nome)
+    pendentes   = [s for s in abertas if s["status"] == "pendente"]
+    em_processo = [s for s in abertas if s["status"] == "em processo"]
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**Pendente** &nbsp;·&nbsp; {len(pendentes)}")
+        if not pendentes:
+            st.caption("Nenhuma solicitação pendente.")
+        for s in pendentes:
+            solicitacao_card(s)
+    with col2:
+        st.markdown(f"**Em Processo** &nbsp;·&nbsp; {len(em_processo)}")
+        if not em_processo:
+            st.caption("Nenhuma solicitação em processo.")
+        for s in em_processo:
+            solicitacao_card(s)
+
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
     st.markdown("### SWM Gestão")
@@ -197,268 +283,281 @@ if c2.button("Sair"):
     st.rerun()
 st.divider()
 
-step = st.session_state.step
+tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
 
-# ── SUCESSO ───────────────────────────────────────────────────────────────
-if step == "sucesso":
-    d = st.session_state.sol
-    mock = st.session_state.sol_mock
-    if mock:
-        st.success("✅ Solicitação registrada! (modo teste — email não enviado)")
-        with st.expander("📧 Email que seria enviado", expanded=True):
-            st.caption(f"Assunto: {mock['assunto']}")
-            st.code(mock["corpo"], language=None)
-    else:
-        st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
-    if d["conta_nova"]:
-        st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
+# NOTA: o bloco "with tab2" vem antes do "with tab1" no código-fonte de propósito.
+# O wizard (tab1) usa st.stop() em pontos intermediários do fluxo, e st.stop()
+# interrompe a execução do script inteiro — qualquer coisa escrita depois dele
+# no arquivo não roda naquele ciclo. Escrevendo tab2 primeiro, o board sempre
+# termina de renderizar antes de qualquer st.stop() do wizard poder cortá-lo.
+# A ordem visual das abas na tela é definida pelos labels em st.tabs([...]),
+# não pela ordem dos blocos "with" aqui embaixo.
+with tab2:
+    render_board()
 
-    conf = st.session_state.sol_conf
-    if conf and conf.get("enviado"):
-        if conf.get("mock"):
-            with st.expander("📧 Confirmação que seria enviada para você", expanded=False):
-                st.caption(f"Assunto: {conf['assunto']}")
-                st.code(conf["corpo"], language=None)
+with tab1:
+    step = st.session_state.step
+
+    # ── SUCESSO ───────────────────────────────────────────────────────────────
+    if step == "sucesso":
+        d = st.session_state.sol
+        mock = st.session_state.sol_mock
+        if mock:
+            st.success("✅ Solicitação registrada! (modo teste — email não enviado)")
+            with st.expander("📧 Email que seria enviado", expanded=True):
+                st.caption(f"Assunto: {mock['assunto']}")
+                st.code(mock["corpo"], language=None)
         else:
-            st.info(f"📧 Confirmação de recebimento enviada para {d['banker_email']}.")
-    elif conf and conf.get("motivo") == "sem_email":
-        st.warning("⚠️ Seu e-mail não está cadastrado na aba Bankers — confirmação não enviada. Peça para cadastrarem.")
-    elif conf and conf.get("motivo") == "erro_relay":
-        st.warning("⚠️ Não consegui enviar a confirmação agora. A solicitação foi registrada normalmente.")
+            st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
+        if d["conta_nova"]:
+            st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
 
-    st.markdown("**Resumo da solicitação**")
-    for label, val in [
-        ("Cliente",            d["cliente_nome"]),
-        ("Conta BTG (origem)", d["conta_btg_origem"]),
-        ("Banco destino",      d["banco_nome"]),
-        ("Agência",            d["agencia"]),
-        ("Conta",              f"{d['conta_destino']}-{d['digito']} ({d['tipo']})"),
-        ("Titular",            d["titular"]),
-        ("CPF/CNPJ",           d["cpf_cnpj_titular"]),
-        ("Valor",              f"R$ {fmt_money(float(d['valor']))}"),
-        ("Data pagamento",     d["data_br"]),
-    ]:
-        l, r = st.columns([1, 2])
-        l.caption(label)
-        r.write(f"**{val}**")
-    st.write("")
-    if st.button("Nova operação", use_container_width=True, type="primary"):
-        st.session_state.step        = "cliente"
-        st.session_state.cliente_sel = None
-        st.session_state.conta_sel   = None
-        st.session_state.conta_nova  = False
-        st.session_state.sol         = None
-        st.session_state.sol_mock    = None
-        st.session_state.sol_conf    = None
-        st.session_state.pop("valor_ted", None)
-        clear_nc()
-        st.rerun()
+        conf = st.session_state.sol_conf
+        if conf and conf.get("enviado"):
+            if conf.get("mock"):
+                with st.expander("📧 Confirmação que seria enviada para você", expanded=False):
+                    st.caption(f"Assunto: {conf['assunto']}")
+                    st.code(conf["corpo"], language=None)
+            else:
+                st.info(f"📧 Confirmação de recebimento enviada para {d['banker_email']}.")
+        elif conf and conf.get("motivo") == "sem_email":
+            st.warning("⚠️ Seu e-mail não está cadastrado na aba Bankers — confirmação não enviada. Peça para cadastrarem.")
+        elif conf and conf.get("motivo") == "erro_relay":
+            st.warning("⚠️ Não consegui enviar a confirmação agora. A solicitação foi registrada normalmente.")
 
-# ── STEP 1: CLIENTE ───────────────────────────────────────────────────────
-elif step == "cliente":
-    st.subheader("1 · Selecione o cliente")
-    if st.session_state.clientes is None:
-        with st.spinner("Carregando clientes..."):
-            st.session_state.clientes = get_clientes(st.session_state.banker_id)
-
-    clientes = st.session_state.clientes
-    if not clientes:
-        st.warning("Nenhum cliente cadastrado para o seu usuário. Fale com o administrador.")
-        st.stop()
-
-    opts = ["Selecione..."] + [f"{c['nome']}  —  {c['conta_btg']}" for c in clientes]
-    sel  = st.selectbox("", opts, label_visibility="collapsed")
-
-    if sel != "Selecione...":
-        cli = clientes[opts.index(sel) - 1]
-        btg_box(cli["conta_btg"], cli["nome"])
-        if st.button("Próxima etapa →", use_container_width=True, type="primary"):
-            st.session_state.cliente_sel = cli
-            st.session_state.step        = "destino"
+        st.markdown("**Resumo da solicitação**")
+        for label, val in [
+            ("Cliente",            d["cliente_nome"]),
+            ("Conta BTG (origem)", d["conta_btg_origem"]),
+            ("Banco destino",      d["banco_nome"]),
+            ("Agência",            d["agencia"]),
+            ("Conta",              f"{d['conta_destino']}-{d['digito']} ({d['tipo']})"),
+            ("Titular",            d["titular"]),
+            ("CPF/CNPJ",           d["cpf_cnpj_titular"]),
+            ("Valor",              f"R$ {fmt_money(float(d['valor']))}"),
+            ("Data pagamento",     d["data_br"]),
+        ]:
+            l, r = st.columns([1, 2])
+            l.caption(label)
+            r.write(f"**{val}**")
+        st.write("")
+        if st.button("Nova operação", use_container_width=True, type="primary"):
+            st.session_state.step        = "cliente"
+            st.session_state.cliente_sel = None
+            st.session_state.conta_sel   = None
+            st.session_state.conta_nova  = False
+            st.session_state.sol         = None
+            st.session_state.sol_mock    = None
+            st.session_state.sol_conf    = None
+            st.session_state.pop("valor_ted", None)
+            clear_nc()
             st.rerun()
 
-# ── STEP 2: DESTINO ───────────────────────────────────────────────────────
-elif step == "destino":
-    cli = st.session_state.cliente_sel
-    if st.button("← Trocar cliente"):
-        st.session_state.step        = "cliente"
-        st.session_state.cliente_sel = None
-        clear_nc()
-        st.rerun()
+    # ── STEP 1: CLIENTE ───────────────────────────────────────────────────────
+    elif step == "cliente":
+        st.subheader("1 · Selecione o cliente")
+        if st.session_state.clientes is None:
+            with st.spinner("Carregando clientes..."):
+                st.session_state.clientes = get_clientes(st.session_state.banker_id)
 
-    btg_box(cli["conta_btg"], cli["nome"])
-    st.subheader("2 · Conta de destino")
-
-    contas  = get_contas(cli["id"])
-    escolha = None
-
-    if contas:
-        opts_c  = [
-            f"{c['banco_nome']}  ·  Ag. {c['agencia']}  ·  Cc. {c['conta']}-{c['digito']}  ·  {c['titular']}"
-            for c in contas
-        ] + ["+ Informar nova conta"]
-        escolha = st.radio("", opts_c, key="radio_contas", label_visibility="collapsed")
-
-        if escolha != "+ Informar nova conta":
-            idx = opts_c.index(escolha)
-            dest_box(contas[idx])
-            if st.button("Usar esta conta →", use_container_width=True, type="primary"):
-                st.session_state.conta_sel  = contas[idx]
-                st.session_state.conta_nova = False
-                st.session_state.step       = "transferencia"
-                st.rerun()
-    else:
-        st.info("Nenhuma conta cadastrada para este cliente. Preencha os dados abaixo.")
-
-    # Formulário nova conta
-    if not contas or escolha == "+ Informar nova conta":
-        st.markdown("---")
-        st.markdown("**Dados da nova conta**")
-        banco_sel = st.selectbox("Banco", BANCO_OPTS, key="nc_banco")
-
-        if banco_sel and not banco_sel.startswith("Outro"):
-            parts   = banco_sel.rsplit("(", 1)
-            preview_cod  = parts[1].rstrip(")").strip()
-            preview_nome = parts[0].strip()
-            logo = _logo_img(preview_cod)
-            if logo:
-                st.markdown(
-                    f'<div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px;">'
-                    f'{logo}<span style="font-weight:600;color:inherit;">{preview_nome}</span></div>',
-                    unsafe_allow_html=True
-                )
-
-        b_cod_custom, b_nome_custom = "", ""
-        if banco_sel and banco_sel.startswith("Outro"):
-            c1, c2 = st.columns(2)
-            b_cod_custom  = c1.text_input("Código do banco", key="nc_b_cod",  placeholder="ex: 341")
-            b_nome_custom = c2.text_input("Nome do banco",   key="nc_b_nome", placeholder="ex: Itaú")
-
-        c1, c2 = st.columns(2)
-        agencia = c1.text_input("Agência",        key="nc_agencia", placeholder="ex: 0001")
-        tipo    = c2.selectbox("Tipo de conta",   ["Corrente", "Poupança"], key="nc_tipo")
-
-        c1, c2 = st.columns([3, 1])
-        conta_n = c1.text_input("Conta",  key="nc_conta",  placeholder="ex: 12345")
-        digito  = c2.text_input("Dígito", key="nc_digito", placeholder="0", max_chars=2)
-
-        titularidade = st.radio(
-            "Titularidade", ["Mesma titularidade", "Terceiro"],
-            key="nc_titularidade", horizontal=True
-        )
-
-        titular, cpf_cnpj = "", ""
-        if titularidade == "Terceiro":
-            titular  = st.text_input("Nome do titular",        key="nc_titular")
-            cpf_cnpj = st.text_input("CPF / CNPJ do titular", key="nc_cpf", placeholder="000.000.000-00")
-
-        if st.button("Usar esta conta →", key="btn_nc", use_container_width=True, type="primary"):
-            erros = []
-            if not banco_sel:             erros.append("banco")
-            if not agencia.strip():       erros.append("agência")
-            if not conta_n.strip():       erros.append("conta")
-            if not digito.strip():        erros.append("dígito")
-            if titularidade == "Terceiro":
-                if not titular.strip():   erros.append("titular")
-                if not cpf_cnpj.strip():  erros.append("CPF/CNPJ")
-            if banco_sel.startswith("Outro"):
-                if not b_cod_custom.strip():  erros.append("código do banco")
-                if not b_nome_custom.strip(): erros.append("nome do banco")
-            if erros:
-                st.error(f"Preencha: {', '.join(erros)}.")
-            else:
-                if banco_sel.startswith("Outro"):
-                    b_cod, b_nome = b_cod_custom.strip(), b_nome_custom.strip()
-                else:
-                    parts  = banco_sel.rsplit("(", 1)
-                    b_nome = parts[0].strip()
-                    b_cod  = parts[1].rstrip(")").strip()
-                titular_val  = titular.strip()  if titularidade == "Terceiro" else "Mesma titularidade"
-                cpf_cnpj_val = cpf_cnpj.strip() if titularidade == "Terceiro" else "—"
-                st.session_state.conta_sel = {
-                    "banco_codigo":     b_cod,           "banco_nome":       b_nome,
-                    "agencia":          agencia.strip(),  "conta":            conta_n.strip(),
-                    "digito":           digito.strip(),   "tipo":             tipo,
-                    "titular":          titular_val,      "cpf_cnpj_titular": cpf_cnpj_val,
-                }
-                st.session_state.conta_nova = True
-                st.session_state.step       = "transferencia"
-                st.rerun()
-
-# ── STEP 3: TRANSFERÊNCIA ─────────────────────────────────────────────────
-elif step == "transferencia":
-    cli        = st.session_state.cliente_sel
-    c          = st.session_state.conta_sel
-    conta_nova = st.session_state.conta_nova
-
-    if st.button("← Trocar conta destino"):
-        st.session_state.step       = "destino"
-        st.session_state.conta_sel  = None
-        st.session_state.conta_nova = False
-        st.rerun()
-
-    btg_box(cli["conta_btg"], cli["nome"])
-    dest_box(c)
-    if conta_nova:
-        st.warning("⚠️ Conta nova — será cadastrada pela equipe após execução.")
-
-    st.subheader("3 · Dados da transferência")
-
-    # auto-formata ao sair do campo
-    if "valor_ted" in st.session_state:
-        _raw = st.session_state["valor_ted"]
-        _parsed = parse_valor(_raw)
-        if _parsed is not None:
-            _fmt = fmt_money(_parsed)
-            if _raw != _fmt:
-                st.session_state["valor_ted"] = _fmt
-
-    col1, col2 = st.columns(2)
-    valor_str = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00", key="valor_ted")
-    if valor_str.strip() and parse_valor(valor_str) is None:
-        col1.caption("⚠️ Formato inválido")
-
-    with st.form("transferencia"):
-        data_pag   = st.date_input("Data de pagamento", value=date.today(), min_value=date.today())
-        finalidade = st.text_input("Finalidade (opcional)", placeholder="ex: Aplicação fundo XYZ")
-        enviar = st.form_submit_button("Enviar solicitação ✉️", use_container_width=True, type="primary")
-
-    if enviar:
-        valor = parse_valor(st.session_state.get("valor_ted", ""))
-        if valor is None:
-            st.error("Valor inválido. Use o formato: 1.500,00")
+        clientes = st.session_state.clientes
+        if not clientes:
+            st.warning("Nenhum cliente cadastrado para o seu usuário. Fale com o administrador.")
             st.stop()
-        dados = {
-            "banker_nome":      st.session_state.banker_nome,
-            "banker_email":     st.session_state.banker_email,
-            "cliente_nome":     cli["nome"],
-            "cliente_id":       cli["id"],
-            "conta_btg_origem": cli["conta_btg"],
-            "banco_codigo":     c["banco_codigo"],
-            "banco_nome":       c["banco_nome"],
-            "agencia":          c["agencia"],
-            "conta_destino":    c["conta"],
-            "digito":           c["digito"],
-            "tipo":             c["tipo"],
-            "titular":          c["titular"],
-            "cpf_cnpj_titular": c["cpf_cnpj_titular"],
-            "valor":            str(valor),
-            "data_pagamento":   data_pag.strftime("%Y-%m-%d"),
-            "conta_nova":       conta_nova,
-            "valor_fmt":        fmt_money(valor),
-            "data_br":          data_pag.strftime("%d/%m/%Y"),
-            "finalidade":       finalidade,
-        }
-        with st.spinner("Enviando..."):
-            try:
-                registrar_solicitacao(dados)
-                resultado = enviar_email(dados)
-                conf      = enviar_confirmacao_banker(dados)
-                st.session_state.sol      = dados
-                st.session_state.sol_mock = resultado if resultado and resultado.get("mock") else None
-                st.session_state.sol_conf = conf
-                st.session_state.step     = "sucesso"
-                clear_nc()
+
+        opts = ["Selecione..."] + [f"{c['nome']}  —  {c['conta_btg']}" for c in clientes]
+        sel  = st.selectbox("", opts, label_visibility="collapsed")
+
+        if sel != "Selecione...":
+            cli = clientes[opts.index(sel) - 1]
+            btg_box(cli["conta_btg"], cli["nome"])
+            if st.button("Próxima etapa →", use_container_width=True, type="primary"):
+                st.session_state.cliente_sel = cli
+                st.session_state.step        = "destino"
                 st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao enviar: {e}")
+
+    # ── STEP 2: DESTINO ───────────────────────────────────────────────────────
+    elif step == "destino":
+        cli = st.session_state.cliente_sel
+        if st.button("← Trocar cliente"):
+            st.session_state.step        = "cliente"
+            st.session_state.cliente_sel = None
+            clear_nc()
+            st.rerun()
+
+        btg_box(cli["conta_btg"], cli["nome"])
+        st.subheader("2 · Conta de destino")
+
+        contas  = get_contas(cli["id"])
+        escolha = None
+
+        if contas:
+            opts_c  = [
+                f"{c['banco_nome']}  ·  Ag. {c['agencia']}  ·  Cc. {c['conta']}-{c['digito']}  ·  {c['titular']}"
+                for c in contas
+            ] + ["+ Informar nova conta"]
+            escolha = st.radio("", opts_c, key="radio_contas", label_visibility="collapsed")
+
+            if escolha != "+ Informar nova conta":
+                idx = opts_c.index(escolha)
+                dest_box(contas[idx])
+                if st.button("Usar esta conta →", use_container_width=True, type="primary"):
+                    st.session_state.conta_sel  = contas[idx]
+                    st.session_state.conta_nova = False
+                    st.session_state.step       = "transferencia"
+                    st.rerun()
+        else:
+            st.info("Nenhuma conta cadastrada para este cliente. Preencha os dados abaixo.")
+
+        # Formulário nova conta
+        if not contas or escolha == "+ Informar nova conta":
+            st.markdown("---")
+            st.markdown("**Dados da nova conta**")
+            banco_sel = st.selectbox("Banco", BANCO_OPTS, key="nc_banco")
+
+            if banco_sel and not banco_sel.startswith("Outro"):
+                parts   = banco_sel.rsplit("(", 1)
+                preview_cod  = parts[1].rstrip(")").strip()
+                preview_nome = parts[0].strip()
+                logo = _logo_img(preview_cod)
+                if logo:
+                    st.markdown(
+                        f'<div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px;">'
+                        f'{logo}<span style="font-weight:600;color:inherit;">{preview_nome}</span></div>',
+                        unsafe_allow_html=True
+                    )
+
+            b_cod_custom, b_nome_custom = "", ""
+            if banco_sel and banco_sel.startswith("Outro"):
+                c1, c2 = st.columns(2)
+                b_cod_custom  = c1.text_input("Código do banco", key="nc_b_cod",  placeholder="ex: 341")
+                b_nome_custom = c2.text_input("Nome do banco",   key="nc_b_nome", placeholder="ex: Itaú")
+
+            c1, c2 = st.columns(2)
+            agencia = c1.text_input("Agência",        key="nc_agencia", placeholder="ex: 0001")
+            tipo    = c2.selectbox("Tipo de conta",   ["Corrente", "Poupança"], key="nc_tipo")
+
+            c1, c2 = st.columns([3, 1])
+            conta_n = c1.text_input("Conta",  key="nc_conta",  placeholder="ex: 12345")
+            digito  = c2.text_input("Dígito", key="nc_digito", placeholder="0", max_chars=2)
+
+            titularidade = st.radio(
+                "Titularidade", ["Mesma titularidade", "Terceiro"],
+                key="nc_titularidade", horizontal=True
+            )
+
+            titular, cpf_cnpj = "", ""
+            if titularidade == "Terceiro":
+                titular  = st.text_input("Nome do titular",        key="nc_titular")
+                cpf_cnpj = st.text_input("CPF / CNPJ do titular", key="nc_cpf", placeholder="000.000.000-00")
+
+            if st.button("Usar esta conta →", key="btn_nc", use_container_width=True, type="primary"):
+                erros = []
+                if not banco_sel:             erros.append("banco")
+                if not agencia.strip():       erros.append("agência")
+                if not conta_n.strip():       erros.append("conta")
+                if not digito.strip():        erros.append("dígito")
+                if titularidade == "Terceiro":
+                    if not titular.strip():   erros.append("titular")
+                    if not cpf_cnpj.strip():  erros.append("CPF/CNPJ")
+                if banco_sel.startswith("Outro"):
+                    if not b_cod_custom.strip():  erros.append("código do banco")
+                    if not b_nome_custom.strip(): erros.append("nome do banco")
+                if erros:
+                    st.error(f"Preencha: {', '.join(erros)}.")
+                else:
+                    if banco_sel.startswith("Outro"):
+                        b_cod, b_nome = b_cod_custom.strip(), b_nome_custom.strip()
+                    else:
+                        parts  = banco_sel.rsplit("(", 1)
+                        b_nome = parts[0].strip()
+                        b_cod  = parts[1].rstrip(")").strip()
+                    titular_val  = titular.strip()  if titularidade == "Terceiro" else "Mesma titularidade"
+                    cpf_cnpj_val = cpf_cnpj.strip() if titularidade == "Terceiro" else "—"
+                    st.session_state.conta_sel = {
+                        "banco_codigo":     b_cod,           "banco_nome":       b_nome,
+                        "agencia":          agencia.strip(),  "conta":            conta_n.strip(),
+                        "digito":           digito.strip(),   "tipo":             tipo,
+                        "titular":          titular_val,      "cpf_cnpj_titular": cpf_cnpj_val,
+                    }
+                    st.session_state.conta_nova = True
+                    st.session_state.step       = "transferencia"
+                    st.rerun()
+
+    # ── STEP 3: TRANSFERÊNCIA ─────────────────────────────────────────────────
+    elif step == "transferencia":
+        cli        = st.session_state.cliente_sel
+        c          = st.session_state.conta_sel
+        conta_nova = st.session_state.conta_nova
+
+        if st.button("← Trocar conta destino"):
+            st.session_state.step       = "destino"
+            st.session_state.conta_sel  = None
+            st.session_state.conta_nova = False
+            st.rerun()
+
+        btg_box(cli["conta_btg"], cli["nome"])
+        dest_box(c)
+        if conta_nova:
+            st.warning("⚠️ Conta nova — será cadastrada pela equipe após execução.")
+
+        st.subheader("3 · Dados da transferência")
+
+        # auto-formata ao sair do campo
+        if "valor_ted" in st.session_state:
+            _raw = st.session_state["valor_ted"]
+            _parsed = parse_valor(_raw)
+            if _parsed is not None:
+                _fmt = fmt_money(_parsed)
+                if _raw != _fmt:
+                    st.session_state["valor_ted"] = _fmt
+
+        col1, col2 = st.columns(2)
+        valor_str = col1.text_input("Valor (R$)", placeholder="ex: 1.500,00", key="valor_ted")
+        if valor_str.strip() and parse_valor(valor_str) is None:
+            col1.caption("⚠️ Formato inválido")
+
+        with st.form("transferencia"):
+            data_pag   = st.date_input("Data de pagamento", value=date.today(), min_value=date.today())
+            finalidade = st.text_input("Finalidade (opcional)", placeholder="ex: Aplicação fundo XYZ")
+            enviar = st.form_submit_button("Enviar solicitação ✉️", use_container_width=True, type="primary")
+
+        if enviar:
+            valor = parse_valor(st.session_state.get("valor_ted", ""))
+            if valor is None:
+                st.error("Valor inválido. Use o formato: 1.500,00")
+                st.stop()
+            dados = {
+                "banker_nome":      st.session_state.banker_nome,
+                "banker_email":     st.session_state.banker_email,
+                "cliente_nome":     cli["nome"],
+                "cliente_id":       cli["id"],
+                "conta_btg_origem": cli["conta_btg"],
+                "banco_codigo":     c["banco_codigo"],
+                "banco_nome":       c["banco_nome"],
+                "agencia":          c["agencia"],
+                "conta_destino":    c["conta"],
+                "digito":           c["digito"],
+                "tipo":             c["tipo"],
+                "titular":          c["titular"],
+                "cpf_cnpj_titular": c["cpf_cnpj_titular"],
+                "valor":            str(valor),
+                "data_pagamento":   data_pag.strftime("%Y-%m-%d"),
+                "conta_nova":       conta_nova,
+                "valor_fmt":        fmt_money(valor),
+                "data_br":          data_pag.strftime("%d/%m/%Y"),
+                "finalidade":       finalidade,
+            }
+            with st.spinner("Enviando..."):
+                try:
+                    registrar_solicitacao(dados)
+                    resultado = enviar_email(dados)
+                    conf      = enviar_confirmacao_banker(dados)
+                    st.session_state.sol      = dados
+                    st.session_state.sol_mock = resultado if resultado and resultado.get("mock") else None
+                    st.session_state.sol_conf = conf
+                    st.session_state.step     = "sucesso"
+                    clear_nc()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao enviar: {e}")
