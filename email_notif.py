@@ -101,41 +101,6 @@ def enviar_email(dados):
 
     return {"mock": False}
 
-def enviar_email_cancelamento(dados):
-    assunto = f"[TED][CANCELAMENTO] {dados['cliente_nome']} — R$ {dados['valor_fmt']} — {dados['banker_nome']}"
-    corpo = "\n".join([
-        "SOLICITAÇÃO DE CANCELAMENTO DE TED",
-        "═══════════════════════════════════",
-        "",
-        f"Banker:   {dados['banker_nome']}",
-        f"Cliente:  {dados['cliente_nome']}",
-        f"Valor:    R$ {dados['valor_fmt']}",
-        f"Data de pagamento original: {dados['data_pagamento']}",
-        f"ID da solicitação: {dados['id']}",
-        "",
-        f"Pedido de cancelamento feito às {dados['hora_cancelamento']}.",
-    ])
-
-    if st.secrets.get("MOCK_EMAIL", False):
-        return {"mock": True, "assunto": assunto, "corpo": corpo}
-
-    remetente = st.secrets["EMAIL_FROM"]
-    senha     = st.secrets["EMAIL_PASSWORD"]
-
-    msg = MIMEMultipart()
-    msg["Subject"] = assunto
-    msg["From"]    = remetente
-    msg["To"]      = DESTINATARIO
-    msg.attach(MIMEText(corpo, "plain", "utf-8"))
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as srv:
-        srv.ehlo()
-        srv.starttls()
-        srv.login(remetente, senha)
-        srv.send_message(msg)
-
-    return {"mock": False}
-
 def enviar_confirmacao_banker(dados):
     email_banker = (dados.get("banker_email") or "").strip()
     if not email_banker:
