@@ -145,12 +145,20 @@ def parse_valor(s):
     except ValueError:
         return None
 
+def proximo_dia_util(d):
+    """d: date ou datetime. Pula sábado/domingo — não considera feriados."""
+    prox = d + timedelta(days=1)
+    while prox.weekday() >= 5:  # 5=sábado, 6=domingo
+        prox += timedelta(days=1)
+    return prox
+
 def calcular_prazo_cancelamento(data_solicitacao_str):
     dt = datetime.strptime(data_solicitacao_str, "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
     if dt.time() < dtime(CUTOFF_HOUR, 0):
         cutoff_hoje = dt.replace(hour=CUTOFF_HOUR, minute=0, second=0, microsecond=0)
         return min(dt + timedelta(minutes=30), cutoff_hoje)
-    return (dt + timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+    prox_util = proximo_dia_util(dt.date())
+    return datetime.combine(prox_util, dtime(12, 0), tzinfo=TZ)
 
 def clear_nc():
     for k in ["nc_banco","nc_b_cod","nc_b_nome","nc_agencia","nc_tipo",
@@ -197,22 +205,27 @@ def solicitacao_card(s):
     # uma data futura, a data escolhida já reflete isso, sem ambiguidade.
     aviso_prazo = ""
     if dt_pagamento == dt_solicitacao.date() and dt_solicitacao.time() >= dtime(CUTOFF_HOUR, 0):
-        prox_dia = (dt_solicitacao + timedelta(days=1)).strftime("%d/%m")
+        prox_dia = proximo_dia_util(dt_solicitacao.date()).strftime("%d/%m")
         aviso_prazo = (
             f'<div class="sol-aviso">⚠️ Solicitado após as {CUTOFF_HOUR}h — '
-            f'na prática só deve ser efetivado em {prox_dia}</div>'
+            f'na prática será executado no próximo dia útil ({prox_dia})</div>'
         )
 
-    st.markdown(f"""
-    <div class="sol-card">
-        <div class="sol-cliente">{s['cliente_nome']} — R$ {fmt_money(s['valor'])}</div>
-        <div class="sol-detalhe">{s['banco_nome']} · {s['titular']}</div>
-        <div class="sol-data">Solicitado em: {s['data']}</div>
-        <div class="sol-data">Pagamento previsto: {pagamento_fmt}</div>
-        {aviso_prazo}
-        <div class="sol-data">Pedido por: {s['banker_nome']}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Montado como string única, sem linha em branco no meio — um placeholder
+    # vazio (aviso_prazo == "") deixaria uma linha só com espaços dentro do
+    # bloco HTML, e o parser de markdown do Streamlit interpreta isso como
+    # fim do bloco, fazendo o resto vazar como texto puro em vez de HTML.
+    partes_card = [
+        f'<div class="sol-cliente">{s["cliente_nome"]} — R$ {fmt_money(s["valor"])}</div>',
+        f'<div class="sol-detalhe">{s["banco_nome"]} · {s["titular"]}</div>',
+        f'<div class="sol-data">Solicitado em: {s["data"]}</div>',
+        f'<div class="sol-data">Pagamento previsto: {pagamento_fmt}</div>',
+    ]
+    if aviso_prazo:
+        partes_card.append(aviso_prazo)
+    partes_card.append(f'<div class="sol-data">Pedido por: {s["banker_nome"]}</div>')
+
+    st.markdown(f'<div class="sol-card">{"".join(partes_card)}</div>', unsafe_allow_html=True)
 
     if s["cancelamento_solicitado"]:
         st.caption(
@@ -586,9 +599,10 @@ with tab1:
             # pedido pro MESMO dia da solicitação e o pedido veio depois do corte.
             agora = datetime.now(TZ)
             if data_pag == agora.date() and agora.time() >= dtime(CUTOFF_HOUR, 0):
+                prox_util = proximo_dia_util(agora.date())
                 dados["aviso_prazo"] = (
                     f"Como sua solicitação foi feita depois das {CUTOFF_HOUR}h, "
-                    f"na prática ela só deve ser efetivada em {(agora + timedelta(days=1)).strftime('%d/%m')}."
+                    f"na prática ela será executada no próximo dia útil ({prox_util.strftime('%d/%m')})."
                 )
             else:
                 dados["aviso_prazo"] = ""
