@@ -148,25 +148,30 @@ def get_solicitacoes_abertas(banker_id):
             "data_pagamento":         str(r["data_pagamento"]),
             "data":                   str(r["timestamp"]),
             "status":                 status,
-            "cancelamento_solicitado": str(r.get("cancelamento_solicitado", "")).strip(),
+            "cancelamento_solicitado":            str(r.get("cancelamento_solicitado", "")).strip(),
+            "banker_solicitacao_cancelamento":    str(r.get("banker_solicitacao_cancelamento", "")).strip(),
         })
     return abertas
 
-def solicitar_cancelamento(sol_id):
+def solicitar_cancelamento(sol_id, banker_nome):
     ws = get_ss().worksheet("Solicitacoes")
     valores = ws.get_all_values()
     header, linhas = valores[0], valores[1:]
     try:
         col_id   = header.index("id")
         col_canc = header.index("cancelamento_solicitado")
+        col_quem = header.index("banker_solicitacao_cancelamento")
     except ValueError as e:
         raise RuntimeError(
             f"Coluna não encontrada em 'Solicitacoes': {e}. "
-            "Confira se o header 'cancelamento_solicitado' foi criado corretamente na planilha."
+            "Confira se os headers 'cancelamento_solicitado' e 'banker_solicitacao_cancelamento' "
+            "foram criados corretamente na planilha."
         )
     for i, linha in enumerate(linhas):
         if len(linha) > col_id and linha[col_id].strip() == str(sol_id):
-            ws.update_cell(i + 2, col_canc + 1, datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"))
+            linha_num = i + 2
+            ws.update_cell(linha_num, col_canc + 1, datetime.now(TZ).strftime("%d/%m/%Y %H:%M:%S"))
+            ws.update_cell(linha_num, col_quem + 1, banker_nome)
             get_solicitacoes_abertas.clear()
             return True
     return False

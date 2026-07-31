@@ -39,6 +39,7 @@ st.markdown("""
 .sol-cliente { font-size: 15px; font-weight: 700; color: #1e293b; }
 .sol-detalhe { font-size: 13px; color: #475569; margin-top: 2px; }
 .sol-data    { font-size: 12px; color: #64748b; margin-top: 4px; }
+.sol-aviso   { font-size: 12px; color: #b45309; margin-top: 4px; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,16 +188,37 @@ def dest_box(c):
 
 def solicitacao_card(s):
     sid = s["id"]
+    dt_solicitacao = datetime.strptime(s["data"], "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
+    dt_pagamento    = datetime.strptime(s["data_pagamento"], "%Y-%m-%d").date()
+    pagamento_fmt   = dt_pagamento.strftime("%d/%m/%Y")
+
+    # Aviso só faz sentido quando o pagamento foi pedido pro MESMO dia da
+    # solicitação e o pedido veio depois do corte — se já foi agendado pra
+    # uma data futura, a data escolhida já reflete isso, sem ambiguidade.
+    aviso_prazo = ""
+    if dt_pagamento == dt_solicitacao.date() and dt_solicitacao.time() >= dtime(CUTOFF_HOUR, 0):
+        prox_dia = (dt_solicitacao + timedelta(days=1)).strftime("%d/%m")
+        aviso_prazo = (
+            f'<div class="sol-aviso">⚠️ Solicitado após as {CUTOFF_HOUR}h — '
+            f'na prática só deve ser efetivado em {prox_dia}</div>'
+        )
+
     st.markdown(f"""
     <div class="sol-card">
         <div class="sol-cliente">{s['cliente_nome']} — R$ {fmt_money(s['valor'])}</div>
         <div class="sol-detalhe">{s['banco_nome']} · {s['titular']}</div>
-        <div class="sol-data">Pagamento: {s['data_pagamento']} · Pedido por: {s['banker_nome']}</div>
+        <div class="sol-data">Solicitado em: {s['data']}</div>
+        <div class="sol-data">Pagamento previsto: {pagamento_fmt}</div>
+        {aviso_prazo}
+        <div class="sol-data">Pedido por: {s['banker_nome']}</div>
     </div>
     """, unsafe_allow_html=True)
 
     if s["cancelamento_solicitado"]:
-        st.caption(f"🚫 Cancelamento solicitado em {s['cancelamento_solicitado']}")
+        st.caption(
+            f"🚫 Cancelamento solicitado por {s['banker_solicitacao_cancelamento']} "
+            f"em {s['cancelamento_solicitado']}"
+        )
         return
 
     prazo = calcular_prazo_cancelamento(s["data"])
@@ -209,7 +231,7 @@ def solicitacao_card(s):
     if st.session_state.get("cancel_pending_id") == sid:
         c1, c2 = st.columns(2)
         if c1.button("Sim, cancelar", key=f"yes_{sid}", type="primary", use_container_width=True):
-            solicitar_cancelamento(sid)
+            solicitar_cancelamento(sid, st.session_state.banker_nome)
             enviar_email_cancelamento({
                 "banker_nome":       st.session_state.banker_nome,
                 "cliente_nome":      s["cliente_nome"],
@@ -230,9 +252,20 @@ def solicitacao_card(s):
             st.session_state.cancel_pending_id = sid
             st.rerun()
 
+CANCELAMENTO_VISIVEL_HORAS = 24
+
+def cancelamento_expirado(s):
+    # Depois de solicitar o cancelamento, o card some do board em 24h mesmo se
+    # a operação ainda não tiver mudado o status — evita ficar pendurado pra
+    # sempre esperando ação manual. Não apaga nada, só some da visão do board.
+    if not s["cancelamento_solicitado"]:
+        return False
+    dt_pedido = datetime.strptime(s["cancelamento_solicitado"], "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
+    return datetime.now(TZ) - dt_pedido > timedelta(hours=CANCELAMENTO_VISIVEL_HORAS)
+
 def render_board():
     st.subheader("Solicitações em aberto — meus clientes")
-    abertas = get_solicitacoes_abertas(st.session_state.banker_id)
+    abertas = [s for s in get_solicitacoes_abertas(st.session_state.banker_id) if not cancelamento_expirado(s)]
     pendentes   = [s for s in abertas if s["status"] == "pendente"]
     em_processo = [s for s in abertas if s["status"] == "em processo"]
 
@@ -548,6 +581,18 @@ with tab1:
                 "data_br":          data_pag.strftime("%d/%m/%Y"),
                 "finalidade":       finalidade,
             }
+
+            # Mesmo aviso do card do board: só faz sentido quando o pagamento foi
+            # pedido pro MESMO dia da solicitação e o pedido veio depois do corte.
+            agora = datetime.now(TZ)
+            if data_pag == agora.date() and agora.time() >= dtime(CUTOFF_HOUR, 0):
+                dados["aviso_prazo"] = (
+                    f"Como sua solicitação foi feita depois das {CUTOFF_HOUR}h, "
+                    f"na prática ela só deve ser efetivada em {(agora + timedelta(days=1)).strftime('%d/%m')}."
+                )
+            else:
+                dados["aviso_prazo"] = ""
+
             with st.spinner("Enviando..."):
                 try:
                     registrar_solicitacao(dados)

@@ -142,10 +142,16 @@ def enviar_confirmacao_banker(dados):
         return {"enviado": False, "motivo": "sem_email"}
 
     assunto = f"[TED] Recebemos sua solicitação — {dados['cliente_nome']} — R$ {dados['valor_fmt']}"
+
+    aviso_html = ""
+    if dados.get("aviso_prazo"):
+        aviso_html = f"⚠️ {dados['aviso_prazo']}<br><br>"
+
     corpo = (
         f"Olá, {dados['banker_nome']}!<br><br>"
         f"Recebemos sua solicitação de TED para o cliente {dados['cliente_nome']}, "
         f"no valor de R$ {dados['valor_fmt']}, com pagamento previsto para {dados['data_br']}.<br><br>"
+        f"{aviso_html}"
         f"A equipe de operações já foi notificada e vai processar a transferência.<br><br>"
         f"Este é um e-mail automático de confirmação de recebimento."
     )
