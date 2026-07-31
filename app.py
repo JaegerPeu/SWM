@@ -191,7 +191,7 @@ def solicitacao_card(s):
     <div class="sol-card">
         <div class="sol-cliente">{s['cliente_nome']} — R$ {fmt_money(s['valor'])}</div>
         <div class="sol-detalhe">{s['banco_nome']} · {s['titular']}</div>
-        <div class="sol-data">Pagamento: {s['data_pagamento']}</div>
+        <div class="sol-data">Pagamento: {s['data_pagamento']} · Pedido por: {s['banker_nome']}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -231,8 +231,8 @@ def solicitacao_card(s):
             st.rerun()
 
 def render_board():
-    st.subheader("Minhas solicitações em aberto")
-    abertas = get_solicitacoes_abertas(st.session_state.banker_nome)
+    st.subheader("Solicitações em aberto — meus clientes")
+    abertas = get_solicitacoes_abertas(st.session_state.banker_id)
     pendentes   = [s for s in abertas if s["status"] == "pendente"]
     em_processo = [s for s in abertas if s["status"] == "em processo"]
 

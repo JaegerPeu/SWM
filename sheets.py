@@ -118,17 +118,23 @@ def _cadastrar_conta_nova(dados):
 
 STATUS_ABERTOS = {"pendente", "em processo"}
 
-def get_solicitacoes_abertas(banker_nome):
+def get_solicitacoes_abertas(banker_id):
+    # Escopo por cliente liberado no login (mesma regra do get_clientes), não por
+    # quem criou a solicitação — um banker pode ver TEDs abertas de colegas pro
+    # mesmo cliente. conta_btg é único por cliente e já é gravado em cada linha
+    # de Solicitacoes, então serve de chave de acesso sem precisar de coluna nova.
+    contas_permitidas = {c["conta_btg"] for c in get_clientes(banker_id)}
     rows = get_ss().worksheet("Solicitacoes").get_all_records()
     abertas = []
     for r in rows:
-        if str(r.get("banker_nome", "")).strip() != banker_nome.strip():
+        if str(r.get("conta_btg_origem", "")).strip() not in contas_permitidas:
             continue
         status = str(r.get("status", "")).strip().lower()
         if status not in STATUS_ABERTOS:
             continue
         abertas.append({
             "id":                     str(r["id"]),
+            "banker_nome":            str(r.get("banker_nome", "")),
             "cliente_nome":           str(r["cliente_nome"]),
             "banco_nome":             str(r["banco_nome"]),
             "titular":                str(r["titular"]),
