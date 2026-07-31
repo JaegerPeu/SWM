@@ -140,7 +140,7 @@ def get_solicitacoes_abertas(banker_id):
             "titular":                str(r["titular"]),
             "valor":                  float(r["valor"]),
             "data_pagamento":         str(r["data_pagamento"]),
-            "data":                   str(r["data"]),
+            "data":                   str(r["timestamp"]),
             "status":                 status,
             "cancelamento_solicitado": str(r.get("cancelamento_solicitado", "")).strip(),
         })
