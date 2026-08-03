@@ -152,13 +152,24 @@ def proximo_dia_util(d):
         prox += timedelta(days=1)
     return prox
 
-def calcular_prazo_cancelamento(data_solicitacao_str):
+def calcular_prazo_cancelamento(data_solicitacao_str, data_pagamento_str):
+    # Regra (definida 03/08/2026): se a liquidação é no mesmo dia da solicitação,
+    # janela curta (1h ou até as 16h, o que vier primeiro; depois das 16h vira
+    # 12h do próximo dia útil). Se a liquidação é num dia futuro (qualquer
+    # distância), o prazo é sempre 12h do próprio dia de liquidação — mais simples
+    # que calcular "dia anterior" e não precisa de ajuste de fim de semana, porque
+    # já é uma data futura fixa.
     dt = datetime.strptime(data_solicitacao_str, "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
-    if dt.time() < dtime(CUTOFF_HOUR, 0):
-        cutoff_hoje = dt.replace(hour=CUTOFF_HOUR, minute=0, second=0, microsecond=0)
-        return min(dt + timedelta(minutes=30), cutoff_hoje)
-    prox_util = proximo_dia_util(dt.date())
-    return datetime.combine(prox_util, dtime(12, 0), tzinfo=TZ)
+    dl = datetime.strptime(data_pagamento_str, "%Y-%m-%d").date()
+
+    if dl == dt.date():
+        if dt.time() < dtime(CUTOFF_HOUR, 0):
+            cutoff_hoje = dt.replace(hour=CUTOFF_HOUR, minute=0, second=0, microsecond=0)
+            return min(dt + timedelta(hours=1), cutoff_hoje)
+        prox_util = proximo_dia_util(dt.date())
+        return datetime.combine(prox_util, dtime(12, 0), tzinfo=TZ)
+
+    return datetime.combine(dl, dtime(12, 0), tzinfo=TZ)
 
 def clear_nc():
     for k in ["nc_banco","nc_b_cod","nc_b_nome","nc_agencia","nc_tipo",
@@ -234,7 +245,7 @@ def solicitacao_card(s):
         )
         return
 
-    prazo = calcular_prazo_cancelamento(s["data"])
+    prazo = calcular_prazo_cancelamento(s["data"], s["data_pagamento"])
     agora = datetime.now(TZ)
 
     if agora >= prazo:
