@@ -121,7 +121,7 @@ def _cadastrar_conta_nova(dados):
     ])
     get_contas.clear()
 
-STATUS_ABERTOS = {"pendente", "em processo"}
+STATUS_ABERTOS = {"pendente", "em processo", "em aprovação cliente"}
 
 @st.cache_data(ttl=15)
 def get_solicitacoes_abertas(banker_id):

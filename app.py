@@ -290,10 +290,11 @@ def cancelamento_expirado(s):
 def render_board():
     st.subheader("Solicitações em aberto — meus clientes")
     abertas = [s for s in get_solicitacoes_abertas(st.session_state.banker_id) if not cancelamento_expirado(s)]
-    pendentes   = [s for s in abertas if s["status"] == "pendente"]
-    em_processo = [s for s in abertas if s["status"] == "em processo"]
+    pendentes        = [s for s in abertas if s["status"] == "pendente"]
+    em_processo       = [s for s in abertas if s["status"] == "em processo"]
+    em_aprov_cliente  = [s for s in abertas if s["status"] == "em aprovação cliente"]
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"**Pendente** &nbsp;·&nbsp; {len(pendentes)}")
         if not pendentes:
@@ -305,6 +306,12 @@ def render_board():
         if not em_processo:
             st.caption("Nenhuma solicitação em processo.")
         for s in em_processo:
+            solicitacao_card(s)
+    with col3:
+        st.markdown(f"**Em Aprovação Cliente** &nbsp;·&nbsp; {len(em_aprov_cliente)}")
+        if not em_aprov_cliente:
+            st.caption("Nenhuma solicitação em aprovação do cliente.")
+        for s in em_aprov_cliente:
             solicitacao_card(s)
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────
