@@ -245,6 +245,12 @@ def solicitacao_card(s):
         )
         return
 
+    # Cancelamento só cabe com a TED ainda "pendente" — uma vez que passou
+    # pra "em processo" ou "em aprovação cliente", a operação já está em
+    # curso e cancelar deixa de ser uma decisão que o banker toma sozinho.
+    if s["status"] != "pendente":
+        return
+
     prazo = calcular_prazo_cancelamento(s["data"], s["data_pagamento"])
     agora = datetime.now(TZ)
 
