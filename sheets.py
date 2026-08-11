@@ -130,7 +130,11 @@ def get_solicitacoes_abertas(banker_id):
     # mesmo cliente. conta_btg é único por cliente e já é gravado em cada linha
     # de Solicitacoes, então serve de chave de acesso sem precisar de coluna nova.
     contas_permitidas = {c["conta_btg"] for c in get_clientes(banker_id)}
-    rows = get_ss().worksheet("Solicitacoes").get_all_records()
+    # UNFORMATTED_VALUE obrigatório aqui: o default (FORMATTED_VALUE) devolve "valor"
+    # como o Sheets exibe (vírgula decimal pt-BR, ex "15.504,15") e a numericise
+    # automática do gspread interpreta o ponto como milhar, virando 1550415 — mesmo
+    # bug já corrigido em TED-Notion/ted_to_notion.py, nunca replicado aqui (11/08/2026).
+    rows = get_ss().worksheet("Solicitacoes").get_all_records(value_render_option="UNFORMATTED_VALUE")
     abertas = []
     for r in rows:
         if str(r.get("conta_btg_origem", "")).strip() not in contas_permitidas:
