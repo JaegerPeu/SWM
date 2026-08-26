@@ -284,13 +284,28 @@ def solicitacao_card(s):
 
 CANCELAMENTO_VISIVEL_HORAS = 24
 
+def _parse_cancelamento_solicitado(v):
+    """O Sheets às vezes detecta "26/08/2026 14:30:00" (escrito como texto
+    por solicitar_cancelamento) como célula de Data de verdade — quando isso
+    acontece, get_all_records(UNFORMATTED_VALUE) devolve um número serial
+    (dias desde 30/12/1899), não a string esperada. Achado real 26/08:
+    quebrava o board inteiro (ValueError) na janela entre pedir o
+    cancelamento e o ted_to_notion aplicar o status "cancelada"."""
+    if isinstance(v, (int, float)):
+        return datetime(1899, 12, 30) + timedelta(days=float(v))
+    return datetime.strptime(str(v), "%d/%m/%Y %H:%M:%S")
+
+
 def cancelamento_expirado(s):
     # Depois de solicitar o cancelamento, o card some do board em 24h mesmo se
     # a operação ainda não tiver mudado o status — evita ficar pendurado pra
     # sempre esperando ação manual. Não apaga nada, só some da visão do board.
     if not s["cancelamento_solicitado"]:
         return False
-    dt_pedido = datetime.strptime(s["cancelamento_solicitado"], "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
+    try:
+        dt_pedido = _parse_cancelamento_solicitado(s["cancelamento_solicitado"]).replace(tzinfo=TZ)
+    except (ValueError, TypeError):
+        return False  # não deu pra interpretar -> mais seguro manter o card visível que derrubar o board
     return datetime.now(TZ) - dt_pedido > timedelta(hours=CANCELAMENTO_VISIVEL_HORAS)
 
 def render_board():
