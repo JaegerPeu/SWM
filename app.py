@@ -115,7 +115,7 @@ for k, v in [
     ("logado", False), ("banker_id", None), ("banker_nome", None), ("banker_email", ""),
     ("step", "cliente"), ("clientes", None),
     ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None), ("sol_mock", None),
-    ("sol_conf", None), ("cancel_pending_id", None),
+    ("sol_conf", None), ("cancel_pending_id", None), ("enviando_ted", False),
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
@@ -434,6 +434,7 @@ with tab1:
             st.session_state.sol         = None
             st.session_state.sol_mock    = None
             st.session_state.sol_conf    = None
+            st.session_state.enviando_ted = False
             st.session_state.pop("valor_ted", None)
             clear_nc()
             st.rerun()
@@ -605,11 +606,27 @@ with tab1:
         with st.form("transferencia"):
             data_pag   = st.date_input("Data de pagamento", value=date.today(), min_value=date.today())
             finalidade = st.text_input("Finalidade (opcional)", placeholder="ex: Aplicação fundo XYZ")
-            enviar = st.form_submit_button("Enviar solicitação ✉️", use_container_width=True, type="primary")
+            enviar = st.form_submit_button(
+                "Enviando..." if st.session_state.enviando_ted else "Enviar solicitação ✉️",
+                use_container_width=True, type="primary",
+                disabled=st.session_state.enviando_ted,
+            )
+
+        # Trava contra duplo-clique (01/09/2026): se o app travar/demorar e a pessoa
+        # clicar "Enviar" de novo, o clique extra cai aqui e é ignorado — o botão já
+        # está desabilitado (linha acima) e essa flag é o cinto de segurança pro caso
+        # de o clique extra ter sido enfileirado antes do rerun desabilitar o botão.
+        # Setada ANTES da chamada lenta (Sheets/email) de propósito: mesmo que esta
+        # execução seja interrompida no meio por um novo clique, a flag já persistiu
+        # em session_state e a próxima execução vê enviando_ted=True e para aqui.
+        if enviar and st.session_state.enviando_ted:
+            st.stop()
 
         if enviar:
+            st.session_state.enviando_ted = True
             valor = parse_valor(st.session_state.get("valor_ted", ""))
             if valor is None:
+                st.session_state.enviando_ted = False
                 st.error("Valor inválido. Use o formato: 1.500,00")
                 st.stop()
             dados = {
@@ -655,7 +672,9 @@ with tab1:
                     st.session_state.sol_mock = resultado if resultado and resultado.get("mock") else None
                     st.session_state.sol_conf = conf
                     st.session_state.step     = "sucesso"
+                    st.session_state.enviando_ted = False
                     clear_nc()
                     st.rerun()
                 except Exception as e:
+                    st.session_state.enviando_ted = False
                     st.error(f"Erro ao enviar: {e}")
