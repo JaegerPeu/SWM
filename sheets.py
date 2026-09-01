@@ -1,7 +1,7 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/Sao_Paulo")
@@ -76,36 +76,8 @@ def get_contas(cliente_id):
         if str(r["cliente_id"]).strip() == str(cliente_id).strip()
     ]
 
-def _e_duplicata_recente(ws, dados, janela_min=2):
-    """Guarda contra duplo-clique/reenvio (01/09/2026): se a mesma solicitação
-    exata (banker + cliente + conta destino + valor + data de pagamento) já foi
-    registrada nos últimos `janela_min` minutos, é o mesmo clique replicado (app
-    travou, usuário clicou "Enviar" de novo) — não uma 2ª TED de verdade.
-    UNFORMATTED_VALUE obrigatório pro campo "valor" (mesmo bug de decimal BR já
-    documentado em get_solicitacoes_abertas) — leitura própria, separada da usada
-    pra calcular novo_id, porque UNFORMATTED_VALUE devolve "id" como float e
-    quebraria o `.isdigit()` de lá."""
-    rows = ws.get_all_records(value_render_option="UNFORMATTED_VALUE")
-    agora = datetime.now(TZ)
-    for r in rows:
-        if (str(r.get("banker_nome", "")) == dados["banker_nome"]
-                and str(r.get("cliente_nome", "")) == dados["cliente_nome"]
-                and str(r.get("conta_destino", "")) == dados["conta_destino"]
-                and str(r.get("digito", "")) == dados["digito"]
-                and float(r.get("valor", 0) or 0) == float(dados["valor"])
-                and str(r.get("data_pagamento", "")) == dados["data_pagamento"]):
-            try:
-                dt_r = datetime.strptime(str(r["timestamp"]), "%d/%m/%Y %H:%M:%S").replace(tzinfo=TZ)
-            except (ValueError, TypeError):
-                continue
-            if agora - dt_r < timedelta(minutes=janela_min):
-                return True
-    return False
-
 def registrar_solicitacao(dados):
     ws = get_ss().worksheet("Solicitacoes")
-    if _e_duplicata_recente(ws, dados):
-        return  # já tem uma solicitação idêntica registrada agora há pouco — não duplica
     rows = ws.get_all_records()
     novo_id = max((int(r["id"]) for r in rows if str(r.get("id", "")).isdigit()), default=0) + 1
     ws.append_row([
