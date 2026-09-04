@@ -38,23 +38,52 @@ def login_banker(usuario, senha):
     except Exception as e:
         return {"ok": False, "erro": f"Erro ao acessar base: {e}"}
 
+def _id_time_gestora(times_rows):
+    """Acha o id do time 'Gestora' (comparação case-insensitive — o nome já
+    mudou de 'Gestora' pra 'GESTORA' uma vez direto na planilha, sem aviso)."""
+    return next(
+        (str(t["id"]) for t in times_rows if str(t["nome"]).strip().upper() == "GESTORA"),
+        None,
+    )
+
 @st.cache_data(ttl=15)
 def get_clientes(banker_id):
+    # Migrado (04/09/2026) de Clientes.banker_id (1 linha por cliente x banker,
+    # 1175 linhas com repetição) para o modelo Times/TimeBankers/ClienteTimes —
+    # Clientes agora tem 1 linha por cliente (170), acesso é banker -> times
+    # dele -> clientes desses times. Ver ESTRUTURA_BOLETADOR_TED.md.
+    #
+    # Gestora (time_id=1) é acesso UNIVERSAL e implícito (decidido 04/09,
+    # correção no mesmo dia): não fica gravada em ClienteTimes pra cada
+    # cliente — isso geraria 1 linha por cliente de novo (a mesma repetição
+    # que a migração queria eliminar) e dependeria de lembrar de atualizar
+    # toda vez que um cliente entra/sai. Time da Gestora enxerga tudo sempre.
+    banker_id = str(banker_id).strip()
+    times_rows = get_ss().worksheet("Times").get_all_records()
+    gestora_id = _id_time_gestora(times_rows)
+    times_do_banker = {
+        str(r["time_id"]) for r in get_ss().worksheet("TimeBankers").get_all_records()
+        if str(r["banker_id"]).strip() == banker_id
+    }
     rows = get_ss().worksheet("Clientes").get_all_records()
-    seen = set()
-    clientes = []
-    for r in rows:
-        if str(r["banker_id"]).strip() != str(banker_id).strip():
-            continue
-        cid = str(r["id"])
-        if cid in seen:
-            continue
-        seen.add(cid)
-        clientes.append({
-            "id": cid,
-            "nome": str(r["nome"]),
-            "conta_btg": str(r["conta_btg"]),
-        })
+
+    if gestora_id and gestora_id in times_do_banker:
+        clientes = [
+            {"id": str(r["id"]), "nome": str(r["nome"]), "conta_btg": str(r["conta_btg"])}
+            for r in rows
+        ]
+        return sorted(clientes, key=lambda x: x["nome"])
+
+    if not times_do_banker:
+        return []
+    clientes_ids = {
+        str(r["cliente_id"]) for r in get_ss().worksheet("ClienteTimes").get_all_records()
+        if str(r["time_id"]) in times_do_banker
+    }
+    clientes = [
+        {"id": str(r["id"]), "nome": str(r["nome"]), "conta_btg": str(r["conta_btg"])}
+        for r in rows if str(r["id"]) in clientes_ids
+    ]
     return sorted(clientes, key=lambda x: x["nome"])
 
 @st.cache_data(ttl=15)
