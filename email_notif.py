@@ -147,10 +147,44 @@ def enviar_confirmacao_banker(dados):
     if dados.get("aviso_prazo"):
         aviso_html = f"⚠️ {dados['aviso_prazo']}<br><br>"
 
+    # Mesma tabela que já ia só pro middle (_montar) — pedido do usuário
+    # (04/09) pro banker ver pra quem/onde a TED foi, não só o valor.
+    # Estilo inline em cada <td> — Outlook/Word não respeita cascata vinda
+    # de um <table>/<div> ancestral (mesmo gotcha já documentado no
+    # ted_to_notion_novo.py).
+    s = "font-family:Calibri, sans-serif; font-size:11pt; padding:4px 8px;"
+    linhas_tabela = [
+        ("Cliente", dados["cliente_nome"]),
+        ("Origem", f"BTG Pactual · Ag. 0001 · Cc. {dados['conta_btg_origem']}"),
+        ("Destino", f"{dados['banco_nome']} · Ag. {dados['agencia']} · "
+                     f"Cc. {dados['conta_destino']}-{dados['digito']} ({dados['tipo']})"),
+        ("Titular", f"{dados['titular']} — {dados['cpf_cnpj_titular']}"),
+        ("Valor", f"R$ {dados['valor_fmt']}"),
+        ("Data de pagamento", dados["data_br"]),
+    ]
+    if dados.get("finalidade"):
+        linhas_tabela.append(("Finalidade", dados["finalidade"]))
+
+    linhas_html = "".join(
+        f'<tr><td style="{s}"><b>{rotulo}</b></td><td style="{s}">{valor}</td></tr>'
+        for rotulo, valor in linhas_tabela
+    )
+    tabela_html = (
+        f'<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">'
+        f"{linhas_html}</table>"
+    )
+
+    conta_nova_html = ""
+    if dados.get("conta_nova"):
+        conta_nova_html = (
+            f'<p style="{s}">⚠️ Conta nova — ainda em cadastro, sem histórico de TEDs anteriores.</p>'
+        )
+
     corpo = (
         f"Olá, {dados['banker_nome']}!<br><br>"
-        f"Recebemos sua solicitação de TED para o cliente {dados['cliente_nome']}, "
-        f"no valor de R$ {dados['valor_fmt']}, com pagamento previsto para {dados['data_br']}.<br><br>"
+        f"Recebemos sua solicitação de TED, detalhada abaixo:<br><br>"
+        f"{tabela_html}<br>"
+        f"{conta_nova_html}"
         f"{aviso_html}"
         f"A equipe de operações já foi notificada e vai processar a transferência.<br><br>"
         f"Este é um e-mail automático de confirmação de recebimento."
