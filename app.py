@@ -3,7 +3,7 @@ from sheets import (
     login_banker, get_clientes, get_contas, registrar_solicitacao,
     get_solicitacoes_abertas, solicitar_cancelamento,
 )
-from email_notif import enviar_email, enviar_confirmacao_banker, enviar_email_cancelamento
+from email_notif import enviar_email, enviar_email_cancelamento
 from datetime import date, datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
 
@@ -397,18 +397,11 @@ with tab1:
         if d["conta_nova"]:
             st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
 
-        conf = st.session_state.sol_conf
-        if conf and conf.get("enviado"):
-            if conf.get("mock"):
-                with st.expander("📧 Confirmação que seria enviada para você", expanded=False):
-                    st.caption(f"Assunto: {conf['assunto']}")
-                    st.code(conf["corpo"], language=None)
-            else:
-                st.info(f"📧 Confirmação de recebimento enviada para {d['banker_email']}.")
-        elif conf and conf.get("motivo") == "sem_email":
-            st.warning("⚠️ Seu e-mail não está cadastrado na aba Bankers — confirmação não enviada. Peça para cadastrarem.")
-        elif conf and conf.get("motivo") == "erro_relay":
-            st.warning("⚠️ Não consegui enviar a confirmação agora. A solicitação foi registrada normalmente.")
+        # Confirmação com tabela pro solicitante + time agora sai do lado do
+        # ted_to_notion_novo.py (notificar_nova_ted), assim que a sync processar
+        # esta solicitação — não é mais síncrona com o submit, por isso sem
+        # feedback de status aqui (ver comentário em "enviando" acima).
+        st.info("📧 A confirmação por e-mail (pra você e pro seu time) chega em instantes, assim que a sincronização processar.")
 
         st.markdown("**Resumo da solicitação**")
         for label, val in [
@@ -669,10 +662,15 @@ with tab1:
             try:
                 registrar_solicitacao(dados)
                 resultado = enviar_email(dados)
-                conf      = enviar_confirmacao_banker(dados)
+                # enviar_confirmacao_banker removida daqui (04/09/2026) — a confirmação
+                # com tabela pro solicitante virou parte do e-mail único de time
+                # (notificar_nova_ted, TED-Notion/ted_to_notion_novo.py), disparado
+                # quando este e-mail cai na pasta monitorada e a sync roda. Evita o
+                # duplo aviso que existia quando o solicitante também tinha acesso à
+                # própria conta como advisor.
                 st.session_state.sol          = dados
                 st.session_state.sol_mock     = resultado if resultado and resultado.get("mock") else None
-                st.session_state.sol_conf     = conf
+                st.session_state.sol_conf     = None
                 st.session_state.step         = "sucesso"
                 st.session_state.sol_pendente = None
                 clear_nc()

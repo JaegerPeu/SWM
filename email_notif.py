@@ -137,6 +137,12 @@ def enviar_email_cancelamento(dados):
     return {"mock": False}
 
 def enviar_confirmacao_banker(dados):
+    """NÃO É MAIS CHAMADA (04/09/2026) — desativada em Boletador-TED/app.py.
+    A tabela que esta função montava foi reaproveitada em
+    TED-Notion/ted_to_notion_novo.py::notificar_nova_ted, que agora manda um
+    único e-mail (solicitante + time) em vez de duplicar com esta confirmação
+    pessoal via relay. Mantida aqui só como referência do template/relay —
+    remover de vez se não for reaproveitada em outro fluxo."""
     email_banker = (dados.get("banker_email") or "").strip()
     if not email_banker:
         return {"enviado": False, "motivo": "sem_email"}
