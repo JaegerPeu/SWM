@@ -66,6 +66,8 @@ def get_clientes(banker_id):
         if str(r["banker_id"]).strip() == banker_id
     }
     rows = get_ss().worksheet("Clientes").get_all_records()
+    # Clientes offshore (tipo = OFF, usados só pelo Boletador de Wire) não entram na TED. Coluna ausente/vazia = onshore.
+    rows = [r for r in rows if str(r.get("tipo", "")).strip().upper() != "OFF"]
 
     if gestora_id and gestora_id in times_do_banker:
         clientes = [
