@@ -4,6 +4,13 @@ from sheets import (
     get_solicitacoes_abertas, solicitar_cancelamento,
 )
 from email_notif import enviar_email, enviar_email_cancelamento
+try:
+    from wire_ui import render_wire   # aba "Wire" (wire BTG US, clientes offshore) — código em wire_ui.py/sheets_wire.py/email_wire.py
+except Exception as _erro_wire:       # se o módulo do wire falhar ao carregar, a TED continua abrindo normalmente
+    _tipo_erro_wire = type(_erro_wire).__name__
+
+    def render_wire(_banker):
+        st.error(f"Wire indisponível no momento ({_tipo_erro_wire}). A TED continua funcionando normalmente.")
 from datetime import date, datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
 
@@ -368,7 +375,7 @@ if c2.button("Sair"):
     st.rerun()
 st.divider()
 
-tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
+tab1, tab2, tab3 = st.tabs(["Nova solicitação", "Minhas solicitações", "Wire"])
 
 # NOTA: o bloco "with tab2" vem antes do "with tab1" no código-fonte de propósito.
 # O wizard (tab1) usa st.stop() em pontos intermediários do fluxo, e st.stop()
@@ -379,6 +386,13 @@ tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
 # não pela ordem dos blocos "with" aqui embaixo.
 with tab2:
     render_board()
+
+# Wire também antes do wizard (mesmo motivo da nota acima: o st.stop() do wizard corta o que vier depois). Um erro no wire nunca derruba a TED.
+with tab3:
+    try:
+        render_wire({"id": st.session_state.banker_id, "nome": st.session_state.banker_nome})
+    except Exception as e:
+        st.error(f"Wire indisponível no momento ({type(e).__name__}). A TED continua funcionando normalmente.")
 
 with tab1:
     step = st.session_state.step
