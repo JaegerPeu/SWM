@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/Sao_Paulo")
 CUTOFF_HOUR = 16
 
-st.set_page_config(page_title="Solicitação:TED & Wire — SWM", page_icon="💸", layout="centered")
+st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
 
 st.markdown("""
 <style>
@@ -345,7 +345,7 @@ def render_board():
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
     st.markdown("### SWM Gestão")
-    st.title("Boletador de TED")
+    st.title("TED & Wire")
     st.write("")
     with st.form("login"):
         usuario = st.text_input("Usuário")
