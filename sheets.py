@@ -5,6 +5,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/Sao_Paulo")
+FILTRO_OFF_ATIVO = True   # marcador: o app mostra no cabeçalho se este sheets.py (com o filtro de clientes offshore) é o que está publicado
 
 SCOPES = [
     "https://spreadsheets.google.com/feeds",

@@ -369,6 +369,8 @@ if not st.session_state.logado:
 # ── HEADER ────────────────────────────────────────────────────────────────
 c1, c2 = st.columns([5, 1])
 c1.markdown(f"**Boletador de TED** &nbsp;·&nbsp; {st.session_state.banker_nome}")
+import sheets as _sheets_mod
+c1.caption("versão 21/10 · filtro offshore: " + ("ativo" if getattr(_sheets_mod, "FILTRO_OFF_ATIVO", False) else "INATIVO (sheets.py desatualizado)"))
 if c2.button("Sair"):
     for k in list(st.session_state.keys()):
         del st.session_state[k]
