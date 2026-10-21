@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/Sao_Paulo")
 CUTOFF_HOUR = 16
 
-st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layout="centered")
+st.set_page_config(page_title="Solicitação:TED & Wire — SWM", page_icon="💸", layout="centered")
 
 st.markdown("""
 <style>
