@@ -375,7 +375,9 @@ if c2.button("Sair"):
     st.rerun()
 st.divider()
 
-tab1, tab2, tab3 = st.tabs(["Nova solicitação", "Minhas solicitações", "Wire"])
+aba_ted, aba_wire = st.tabs(["TEDs", "Wires"])
+with aba_ted:
+    tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
 
 # NOTA: o bloco "with tab2" vem antes do "with tab1" no código-fonte de propósito.
 # O wizard (tab1) usa st.stop() em pontos intermediários do fluxo, e st.stop()
@@ -388,7 +390,7 @@ with tab2:
     render_board()
 
 # Wire também antes do wizard (mesmo motivo da nota acima: o st.stop() do wizard corta o que vier depois). Um erro no wire nunca derruba a TED.
-with tab3:
+with aba_wire:
     try:
         render_wire({"id": st.session_state.banker_id, "nome": st.session_state.banker_nome})
     except Exception as e:

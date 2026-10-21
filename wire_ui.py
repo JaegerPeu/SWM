@@ -14,7 +14,7 @@ CUTOFF_HOUR = 16
 MOTIVOS = ["Same Name (mesma titularidade)", "Third Party - Others", "Third Party - Corporate Formation / Ongoing filing Fees",
            "Third Party - Related Parties"]
 MOEDAS = ["USD"]   # só US$ por enquanto; incluir outras moedas aqui quando houver
-AVISO = ("**Para executarmos o wire, todos os dados e documentos abaixo são obrigatórios.** Wires com informações incompletas ou "
+AVISO = ("<b>Para executarmos o wire, todos os dados e documentos abaixo são obrigatórios.</b> Wires com informações incompletas ou "
          "divergentes podem ser recusados pelo banco ou atrasar a liquidação. Para beneficiários de terceiros, anexe o documento que "
          "comprove a operação (invoice, contrato ou similar). Confira nome do beneficiário, SWIFT/ABA e número da conta: erro nesses "
          "dados pode gerar devolução com tarifas.")
@@ -236,7 +236,7 @@ def render_wire(banker):
     st.session_state.setdefault("w_feito", None)
     st.session_state.setdefault("w_n", 0)
     st.markdown(CSS, unsafe_allow_html=True)
-    aba_novo, aba_aberto = st.tabs(["Novo wire", "Wires em aberto"])
+    aba_novo, aba_aberto = st.tabs(["Novo wire", "Em aberto"])
     with aba_aberto:        # antes do formulário: o formulário usa return/st.rerun em pontos intermediários
         _board(banker)
     with aba_novo:
