@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/Sao_Paulo")
 CUTOFF_HOUR = 16
 
-st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
+st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layout="centered")
 
 st.markdown("""
 <style>
@@ -106,6 +106,14 @@ LOGOS = {
     "745": "citibank.com.br",
     "748": "sicredi.com.br",
     "756": "sicoob.com.br",
+    "077": "inter.co",
+    "084": "sisprime.com.br",
+    "102": "xpi.com.br",
+    "136": "unicred.com.br",
+    "301": "bpp.com.br",
+    "318": "bancobmg.com.br",
+    "508": "avenue.us",
+    "712": "ouribank.com.br",
 }
 
 def _logo_img(codigo):
@@ -345,7 +353,7 @@ def render_board():
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
     st.markdown("### SWM Gestão")
-    st.title("TED & Wire")
+    st.title("Boletador de TED")
     st.write("")
     with st.form("login"):
         usuario = st.text_input("Usuário")
@@ -368,7 +376,7 @@ if not st.session_state.logado:
 
 # ── HEADER ────────────────────────────────────────────────────────────────
 c1, c2 = st.columns([5, 1])
-c1.markdown(f"**Boletador TED & Wire** &nbsp;·&nbsp; {st.session_state.banker_nome}")
+c1.markdown(f"**Boletador de TED** &nbsp;·&nbsp; {st.session_state.banker_nome}")
 import sheets as _sheets_mod
 c1.caption("versão 21/10 · filtro offshore: " + ("ativo" if getattr(_sheets_mod, "FILTRO_OFF_ATIVO", False) else "INATIVO (sheets.py desatualizado)"))
 if c2.button("Sair"):
@@ -377,9 +385,17 @@ if c2.button("Sair"):
     st.rerun()
 st.divider()
 
-aba_ted, aba_wire = st.tabs(["TEDs", "Wires"])
-with aba_ted:
-    tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
+# Menu principal: TEDs | Wires. É um seletor (não st.tabs) de propósito: com abas o Streamlit executa as duas ao mesmo tempo, e o wire leria a
+# planilha a cada clique da TED (estourou a cota de leitura do Google em 21/10). Escolhida "Wires", só o wire roda.
+modo = st.radio("Menu", ["TEDs", "Wires"], horizontal=True, label_visibility="collapsed", key="menu_principal")
+if modo == "Wires":
+    try:
+        render_wire({"id": st.session_state.banker_id, "nome": st.session_state.banker_nome})
+    except Exception as e:
+        st.error(f"Wire indisponível no momento ({type(e).__name__}). A TED continua funcionando normalmente.")
+    st.stop()
+
+tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
 
 # NOTA: o bloco "with tab2" vem antes do "with tab1" no código-fonte de propósito.
 # O wizard (tab1) usa st.stop() em pontos intermediários do fluxo, e st.stop()
@@ -390,13 +406,6 @@ with aba_ted:
 # não pela ordem dos blocos "with" aqui embaixo.
 with tab2:
     render_board()
-
-# Wire também antes do wizard (mesmo motivo da nota acima: o st.stop() do wizard corta o que vier depois). Um erro no wire nunca derruba a TED.
-with aba_wire:
-    try:
-        render_wire({"id": st.session_state.banker_id, "nome": st.session_state.banker_nome})
-    except Exception as e:
-        st.error(f"Wire indisponível no momento ({type(e).__name__}). A TED continua funcionando normalmente.")
 
 with tab1:
     step = st.session_state.step
