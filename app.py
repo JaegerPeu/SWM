@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/Sao_Paulo")
 CUTOFF_HOUR = 16
 
-st.set_page_config(page_title="Boletador de TED — SWM", page_icon="💸", layout="centered")
+st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
 
 st.markdown("""
 <style>
@@ -353,7 +353,7 @@ def render_board():
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
     st.markdown("### SWM Gestão")
-    st.title("Boletador de TED")
+    st.title("TED & Wire")
     st.write("")
     with st.form("login"):
         usuario = st.text_input("Usuário")
@@ -376,7 +376,7 @@ if not st.session_state.logado:
 
 # ── HEADER ────────────────────────────────────────────────────────────────
 c1, c2 = st.columns([5, 1])
-c1.markdown(f"**Boletador de TED** &nbsp;·&nbsp; {st.session_state.banker_nome}")
+c1.markdown(f"**TED & Wire** &nbsp;·&nbsp; {st.session_state.banker_nome}")
 import sheets as _sheets_mod
 c1.caption("versão 21/10 · filtro offshore: " + ("ativo" if getattr(_sheets_mod, "FILTRO_OFF_ATIVO", False) else "INATIVO (sheets.py desatualizado)"))
 if c2.button("Sair"):
