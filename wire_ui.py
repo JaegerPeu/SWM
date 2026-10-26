@@ -74,9 +74,12 @@ def _novo_wire(banker):
     if ss.w_feito:
         f = ss.w_feito
         st.success(f"Solicitação de wire #{f['id']} registrada. A confirmação por e-mail chega em instantes, assim que a sincronização processar.")
+        if f["mail"].get("erro"):
+            st.warning("⚠️ O e-mail automático para a equipe não saiu. Avise o time de Middle.")
         if f["mail"].get("mock"):
             st.info("Modo teste: e-mail NÃO enviado. Conteúdo abaixo.")
             st.code(f["mail"]["assunto"] + "\n\n" + f["mail"]["corpo"])
+        st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. Não refaça a solicitação.")
         if st.button("Nova solicitação de wire", type="primary", key="w_nova"):
             ss.w_feito = None
             ss.w_n += 1
@@ -174,7 +177,13 @@ def _novo_wire(banker):
              "anexos": [a.name for a in anexos], "benef": benef, "beneficiario_novo": not benef.get("id") and not tipo.startswith("Interna")}
         with st.spinner("Enviando..."):
             sid = registrar_wire(d)
-            mail = enviar(d, [(a.name, a.getvalue()) for a in anexos])
+            # Fix 26/10/2026: se o e-mail falhava, o erro derrubava a tela com o wire JÁ gravado
+            # e o botão continuava ali — cada novo clique gravava outro wire. Agora a falha do
+            # e-mail não impede a tela de sucesso (o formulário some e não dá para clicar de novo).
+            try:
+                mail = enviar(d, [(a.name, a.getvalue()) for a in anexos])
+            except Exception as e:
+                mail = {"mock": False, "erro": str(e)}
         ss.w_feito = {"id": sid, "mail": mail}
         st.rerun()
 

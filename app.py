@@ -131,6 +131,7 @@ for k, v in [
     ("step", "cliente"), ("clientes", None),
     ("cliente_sel", None), ("conta_sel", None), ("conta_nova", False), ("sol", None), ("sol_mock", None),
     ("sol_conf", None), ("cancel_pending_id", None), ("sol_pendente", None), ("erro_envio", None),
+    ("sol_email_falhou", None),
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
@@ -419,8 +420,15 @@ with tab1:
             with st.expander("📧 Email que seria enviado", expanded=True):
                 st.caption(f"Assunto: {mock['assunto']}")
                 st.code(mock["corpo"], language=None)
+        elif st.session_state.sol_email_falhou:
+            # Linha já gravada na planilha: a sync TED→Notion avisa o time sozinha.
+            # Só o e-mail automático deste app falhou — não voltar ao formulário.
+            st.success("✅ Solicitação registrada.")
+            st.warning("⚠️ O e-mail automático para a equipe de operações não saiu. Avise o time de Middle.")
         else:
             st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
+        st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. "
+                "Não refaça a solicitação.")
         if d["conta_nova"]:
             st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
 
@@ -455,6 +463,7 @@ with tab1:
             st.session_state.sol_mock    = None
             st.session_state.sol_conf    = None
             st.session_state.sol_pendente = None
+            st.session_state.sol_email_falhou = None
             st.session_state.pop("valor_ted", None)
             clear_nc()
             st.rerun()
@@ -686,9 +695,25 @@ with tab1:
     elif step == "enviando":
         dados = st.session_state.sol_pendente
         with st.spinner("Enviando..."):
+            # Fix 26/10/2026: se o e-mail falhava (senha do Gmail trocada), o app voltava
+            # ao formulário com a linha JÁ gravada na planilha; cada novo clique gravava
+            # outra linha e a sync TED→Notion mandava um aviso por linha. Agora só a
+            # gravação (sem linha criada ainda) pode voltar ao formulário; depois dela
+            # o fluxo segue sempre para "sucesso", mesmo com o e-mail falhando.
+            registrou = False
             try:
                 registrar_solicitacao(dados)
-                resultado = enviar_email(dados)
+                registrou = True
+            except Exception as e:
+                st.session_state.step       = "transferencia"
+                st.session_state.erro_envio = str(e)
+            if registrou:
+                resultado = None
+                st.session_state.sol_email_falhou = None
+                try:
+                    resultado = enviar_email(dados)
+                except Exception as e:
+                    st.session_state.sol_email_falhou = str(e)
                 # enviar_confirmacao_banker removida daqui (04/09/2026) — a confirmação
                 # com tabela pro solicitante virou parte do e-mail único de time
                 # (notificar_nova_ted, TED-Notion/ted_to_notion_novo.py), disparado
@@ -701,7 +726,4 @@ with tab1:
                 st.session_state.step         = "sucesso"
                 st.session_state.sol_pendente = None
                 clear_nc()
-            except Exception as e:
-                st.session_state.step      = "transferencia"
-                st.session_state.erro_envio = str(e)
         st.rerun()
