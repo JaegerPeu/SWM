@@ -107,7 +107,14 @@ def _novo_wire(banker):
     tipo = st.radio("Tipo de transferência", ["Externa", "Interna (entre contas BTG US)"], horizontal=True, key=f"wtipo{k}")
     c1, c2, c3 = st.columns([1, 2, 2])
     moeda = c1.selectbox("Moeda", MOEDAS, key=f"wmoeda{k}")
+    # auto-formata ao sair do campo (mesmo comportamento da TED): coloca milhar e decimal
+    if f"wvalor{k}" in ss:
+        _p = parse_valor(ss[f"wvalor{k}"])
+        if _p is not None and ss[f"wvalor{k}"] != fmt(_p):
+            ss[f"wvalor{k}"] = fmt(_p)
     valor_txt = c2.text_input("Valor", placeholder="1,500.00", key=f"wvalor{k}")
+    if valor_txt.strip() and parse_valor(valor_txt) is None:
+        c2.caption("⚠️ Formato inválido")
     data_pag = c3.date_input("Data de pagamento", value=date.today(), min_value=date.today(), format="DD/MM/YYYY", key=f"wdata{k}")
     if data_pag.weekday() >= 5:
         st.caption("⚠️ Fim de semana: na prática será executado no próximo dia útil.")
