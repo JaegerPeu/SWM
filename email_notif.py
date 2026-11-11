@@ -8,7 +8,7 @@ from email import encoders
 import openpyxl
 import streamlit as st
 
-DESTINATARIO = "automacao@swmgestao.com.br"
+DESTINATARIO = "middle@swmgestao.com.br"
 RELAY_SUBJECT_PREFIX = "[TED-CONFIRM]"
 RELAY_TO_EMAIL = "pedro.duarte@swmgestao.com.br"
 
