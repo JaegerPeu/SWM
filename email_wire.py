@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-DESTINO_PADRAO = "middle@swmgestao.com.br"
+DESTINO_PADRAO = "automacao@swmgestao.com.br"
 
 
 def _montar(d):
