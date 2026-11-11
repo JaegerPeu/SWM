@@ -1,6 +1,7 @@
 import smtplib
 import io
 import json
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -57,14 +58,18 @@ def _gerar_excel(dados):
     ws = wb.active
     ws.title = "TED"
     ws.append(["conta_btg", "numero_banco", "agencia", "conta_destino", "data_ted", "valor_ted"])
+    # data_ted como DATA de verdade (não texto), exibida dd/mm/aaaa
+    data_ted = datetime.strptime(dados["data_pagamento"], "%Y-%m-%d").date()
     ws.append([
         dados["conta_btg_origem"],
         dados["banco_codigo"],
         dados["agencia"],
         f"{dados['conta_destino']}-{dados['digito']}",
-        dados["data_br"],
+        data_ted,
         float(dados["valor"]),
     ])
+    ws["E2"].number_format = "DD/MM/YYYY"
+    ws.column_dimensions["E"].width = 12
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
