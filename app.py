@@ -35,78 +35,107 @@ EMAIL_CONFIRMACAO_INDISPONIVEL = bool(AVISO_TED and AVISO_TED.get("email_indispo
 
 st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="wide")
 
+_TEMA_CLARO  = ("--bg:#F3F4F6; --surface:#FFFFFF; --surface2:#F7F8FA; --line:#E1E4E8; --line2:#CFD4DA; --text:#102134; --muted:#404751; "
+                "--subtle:#5F6B7A; --accent:#896F3D; --pbg:#102134; --pfg:#FFFFFF; --phover:#1A293F; --sandl:#F4F1EB; --aline:#E3DCCB; "
+                "--infobg:#EFF6FF; --infoline:#3E5A7A; --errbg:#FEF2F2; --errline:#B91C1C; --sand:#C8BEAA; color-scheme:light;")
+_TEMA_ESCURO = ("--bg:#0D1620; --surface:#142132; --surface2:#1A2B40; --line:#263A52; --line2:#3A5473; --text:#E8ECF1; --muted:#B7C2CF; "
+                "--subtle:#93A3B6; --accent:#D2B06E; --pbg:#C8BEAA; --pfg:#102134; --phover:#DDD4C3; --sandl:#1F2A38; --aline:#3A4A5E; "
+                "--infobg:#14283D; --infoline:#6F93BD; --errbg:#2E1A1E; --errline:#E07A7A; --sand:#C8BEAA; color-scheme:dark;")
+
+# Tema: por padrão segue o modo claro/escuro do sistema (prefers-color-scheme); o seletor "Tema" do cabeçalho força um dos dois.
+# Todas as cores de texto são definidas aqui (não herdadas do tema do Streamlit) para o texto ficar legível em qualquer combinação.
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap');
-:root { --navy:#102134; --navy2:#1A293F; --gold:#896F3D; --sand:#C8BEAA; --sand-l:#F4F1EB; --grafite:#404751; --bg:#F3F4F6; --line:#E1E4E8; }
+:root { __CLARO__ }
+@media (prefers-color-scheme: dark) { :root { __ESCURO__ } }
 html, body, .stApp, [data-testid="stAppViewContainer"], .stMarkdown, .stTextInput, .stSelectbox, .stButton, label, p, li, span, input, textarea { font-family: 'Montserrat', system-ui, sans-serif; }
-.stApp { background: var(--bg); color: var(--navy); }
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] { background: var(--bg); color: var(--text); }
 #MainMenu, footer, header { visibility: hidden }
-.stApp::before { content:""; position:fixed; top:0; left:0; right:0; height:3px; z-index:1000; background:linear-gradient(to right, var(--gold) 0 72px, var(--navy) 72px); }
+.stApp::before { content:""; position:fixed; top:0; left:0; right:0; height:3px; z-index:1000; background:linear-gradient(to right, var(--accent) 0 72px, var(--pbg) 72px); }
 .block-container { max-width: 1080px; padding-top: 1.6rem; padding-bottom: 3rem; }
-h1, h2, h3, h4, [data-testid="stHeading"] { font-family: 'Rubik', sans-serif !important; color: var(--navy); font-weight: 500 !important; letter-spacing: 0; }
+h1, h2, h3, h4, [data-testid="stHeading"], [data-testid="stHeading"] * { font-family: 'Rubik', sans-serif !important; color: var(--text) !important; font-weight: 500 !important; letter-spacing: 0; }
 h3, [data-testid="stHeading"] h3 { font-size: 20px !important; margin-top: 4px; }
-[data-testid="stWidgetLabel"] p { font-weight: 600; font-size: 12px; color: var(--grafite); }
-.stButton > button, .stFormSubmitButton > button { font-family:'Rubik',sans-serif; font-weight:500; border-radius:6px; border:1px solid var(--navy); background:#fff; color:var(--navy); padding:.55rem 1.2rem; }
-.stButton > button:hover, .stFormSubmitButton > button:hover { border-color:var(--navy2); color:var(--navy2); background:#fafbfc; }
-button[kind="primary"], button[kind="primaryFormSubmit"], button[data-testid="stBaseButton-primary"], button[data-testid="stBaseButton-primaryFormSubmit"] { background:var(--navy) !important; color:#fff !important; border:1px solid var(--navy) !important; }
-button[kind="primary"]:hover, button[kind="primaryFormSubmit"]:hover, button[data-testid="stBaseButton-primary"]:hover, button[data-testid="stBaseButton-primaryFormSubmit"]:hover { background:var(--navy2) !important; }
-button[kind="primary"] p, button[kind="primaryFormSubmit"] p, button[data-testid="stBaseButton-primary"] p, button[data-testid="stBaseButton-primaryFormSubmit"] p { color:#fff !important; }
-div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { border-radius:6px !important; border-color:#cfd4da !important; background:#fff !important; }
-div[data-baseweb="input"]:focus-within, div[data-baseweb="select"] > div:focus-within { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(16,33,52,.08); }
+[data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p, [data-testid="stMarkdownContainer"] li, [data-testid="stMarkdownContainer"] strong, [data-testid="stMarkdownContainer"] em { color: var(--text); }
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { color: var(--subtle) !important; opacity: 1 !important; }
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-weight: 600; font-size: 12px; color: var(--muted) !important; }
+[data-testid="stRadio"] label p, [data-testid="stCheckbox"] label p, [data-testid="stCheckbox"] p { color: var(--text); }
+[data-testid="stFileUploader"] section, [data-testid="stFileUploaderDropzone"] { background: var(--surface) !important; border: 1px dashed var(--line2) !important; }
+[data-testid="stFileUploader"] *, [data-testid="stFileUploaderDropzone"] * { color: var(--muted) !important; }
+.stButton > button, .stFormSubmitButton > button { font-family:'Rubik',sans-serif; font-weight:500; border-radius:6px; border:1px solid var(--text); background:var(--surface); color:var(--text); padding:.55rem 1.2rem; }
+.stButton > button p, .stFormSubmitButton > button p { color: var(--text); }
+.stButton > button:hover, .stFormSubmitButton > button:hover { border-color:var(--accent); background:var(--surface2); }
+button[kind="primary"], button[kind="primaryFormSubmit"], button[data-testid="stBaseButton-primary"], button[data-testid="stBaseButton-primaryFormSubmit"] { background:var(--pbg) !important; color:var(--pfg) !important; border:1px solid var(--pbg) !important; }
+button[kind="primary"]:hover, button[kind="primaryFormSubmit"]:hover, button[data-testid="stBaseButton-primary"]:hover, button[data-testid="stBaseButton-primaryFormSubmit"]:hover { background:var(--phover) !important; border-color:var(--phover) !important; }
+button[kind="primary"] p, button[kind="primaryFormSubmit"] p, button[data-testid="stBaseButton-primary"] p, button[data-testid="stBaseButton-primaryFormSubmit"] p { color:var(--pfg) !important; }
+div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] > div, div[data-baseweb="textarea"] { border-radius:6px !important; border-color:var(--line2) !important; background:var(--surface) !important; }
+div[data-baseweb="input"]:focus-within, div[data-baseweb="select"] > div:focus-within { border-color:var(--text) !important; box-shadow:0 0 0 3px rgba(128,128,128,.18); }
+input, textarea { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; background: transparent !important; caret-color: var(--text); }
+input::placeholder, textarea::placeholder { color: var(--subtle) !important; -webkit-text-fill-color: var(--subtle) !important; opacity: 1; }
+div[data-baseweb="select"] span, div[data-baseweb="select"] div { color: var(--text); }
+div[data-baseweb="select"] svg, div[data-baseweb="input"] svg { fill: var(--muted); color: var(--muted); }
+div[data-baseweb="popover"] > div, div[data-baseweb="popover"] ul, div[data-baseweb="menu"] { background: var(--surface) !important; border: 1px solid var(--line2); }
+div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--text) !important; background: transparent !important; }
+div[data-baseweb="popover"] li:hover, div[data-baseweb="popover"] li[aria-selected="true"] { background: var(--surface2) !important; }
+div[data-baseweb="calendar"], div[data-baseweb="calendar"] * { background: var(--surface) !important; color: var(--text) !important; }
+div[data-baseweb="calendar"] button[aria-selected="true"], div[data-baseweb="calendar"] [aria-selected="true"] { background: var(--pbg) !important; color: var(--pfg) !important; }
+div[data-testid="stForm"] { border-color: var(--line); }
 .stTabs [data-baseweb="tab-list"] { gap:4px; border-bottom:1px solid var(--line); }
-.stTabs [data-baseweb="tab"] { font-family:'Rubik',sans-serif; font-weight:500; color:var(--grafite); padding:8px 16px; }
-.stTabs [aria-selected="true"] { color:var(--navy); }
-.stTabs [data-baseweb="tab-highlight"] { background:var(--gold); height:2px; }
+.stTabs [data-baseweb="tab"] { font-family:'Rubik',sans-serif; font-weight:500; color:var(--muted) !important; padding:8px 16px; background: transparent !important; }
+.stTabs [data-baseweb="tab"] p { color: var(--muted); }
+.stTabs [aria-selected="true"], .stTabs [aria-selected="true"] p { color:var(--text) !important; }
+.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:2px; }
 .stTabs [data-baseweb="tab-border"] { background:transparent; }
-.st-key-menu_principal div[role="radiogroup"] { display:inline-flex; gap:0; border:1px solid #cfd4da; border-radius:8px; padding:3px; background:#fff; }
+.st-key-menu_principal div[role="radiogroup"] { display:inline-flex; gap:0; border:1px solid var(--line2); border-radius:8px; padding:3px; background:var(--surface); }
 .st-key-menu_principal label { margin:0; padding:7px 28px; border-radius:6px; cursor:pointer; }
 .st-key-menu_principal label > div:first-child { display:none; }
-.st-key-menu_principal label p { font-family:'Rubik',sans-serif; font-weight:500; font-size:13px; margin:0; color:var(--grafite); }
-.st-key-menu_principal label:has(input:checked) { background:var(--navy); }
-.st-key-menu_principal label:has(input:checked) p { color:#fff; }
-div[data-testid="stAlert"] { border-radius:6px; }
+.st-key-menu_principal label p { font-family:'Rubik',sans-serif; font-weight:500; font-size:13px; margin:0; color:var(--muted); }
+.st-key-menu_principal label:has(input:checked) { background:var(--pbg); }
+.st-key-menu_principal label:has(input:checked) p { color:var(--pfg); }
+div[data-testid="stAlert"] { border-radius:6px; background:var(--surface) !important; border:1px solid var(--line2); border-left:4px solid var(--accent); }
+div[data-testid="stAlert"] *, div[data-testid="stAlert"] p { color: var(--text) !important; }
 .topo-user { display:flex; align-items:center; gap:18px; }
 .topo-logo { height:46px; width:auto; }
-.topo-nome { font-size:13px; color:var(--grafite); border-left:1px solid var(--line); padding-left:18px; line-height:1.3; }
-.topo-nome b { color:var(--navy); font-family:'Rubik',sans-serif; font-weight:500; display:block; }
-.login-box { text-align:left; margin:6vh 0 18px 0; }
-.login-box .topo-logo { height:64px; margin-bottom:28px; }
-.eyebrow { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600; }
-.login-h1 { font-family:'Rubik',sans-serif; font-weight:500; font-size:28px; color:var(--navy); margin:6px 0 6px 0; line-height:1.25; }
-.login-sub { color:var(--grafite); font-size:13px; margin:0; }
-.aviso { display:flex; gap:14px; background:var(--sand-l); border:1px solid #e3dccb; border-left:4px solid var(--gold); border-radius:6px; padding:14px 18px; margin:14px 0 20px 0; }
-.aviso .ic { flex:0 0 22px; height:22px; border-radius:50%; border:1.5px solid var(--gold); color:var(--gold); font:600 13px 'Rubik',sans-serif; display:flex; align-items:center; justify-content:center; margin-top:1px; }
-.aviso strong { display:block; font:500 14px 'Rubik',sans-serif; color:var(--navy); margin-bottom:2px; }
-.aviso span { font-size:13px; color:var(--grafite); }
-.aviso-info { background:#eff6ff; border-color:#bfdbfe; border-left-color:#3E5A7A; }
-.aviso-error { background:#fef2f2; border-color:#fecaca; border-left-color:#b91c1c; }
-.nota { font-size:12px; color:var(--grafite); background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin:4px 0 14px 0; }
-.nota b { color:var(--navy); }
-.btg-box, .dest-box { border-radius:8px; padding:14px 18px; margin:10px 0 16px 0; display:flex; align-items:center; justify-content:space-between; min-height:96px; background:#fff; border:1px solid var(--line); }
-.btg-box  { border-left:3px solid var(--gold); }
-.dest-box { border-left:3px solid var(--navy); }
-.btg-label, .dest-label { font-size:11px; font-weight:600; color:var(--grafite); text-transform:uppercase; letter-spacing:.1em; }
-.btg-numero { font:500 24px 'Rubik',sans-serif; color:var(--navy); margin-top:3px; }
-.btg-nome { font-size:14px; color:var(--grafite); margin-top:4px; }
-.dest-banco { font:500 20px 'Rubik',sans-serif; color:var(--navy); margin-top:3px; }
-.dest-detalhe { font-size:13px; color:var(--grafite); margin-top:4px; line-height:1.55; }
+.logo-escuro { display:none; }
+@media (prefers-color-scheme: dark) { .logo-claro { display:none; } .logo-escuro { display:inline; } }
+.topo-nome { font-size:13px; color:var(--muted); border-left:1px solid var(--line2); padding-left:18px; line-height:1.3; }
+.topo-nome b { color:var(--text); font-family:'Rubik',sans-serif; font-weight:500; display:block; }
+.eyebrow { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+.login-h1 { font-family:'Rubik',sans-serif; font-weight:500; font-size:28px; color:var(--text); margin:6px 0 6px 0; line-height:1.25; }
+.login-sub { color:var(--muted); font-size:13px; margin:0; }
+.aviso { display:flex; gap:14px; background:var(--sandl); border:1px solid var(--aline); border-left:4px solid var(--accent); border-radius:6px; padding:14px 18px; margin:14px 0 20px 0; }
+.aviso .ic { flex:0 0 22px; height:22px; border-radius:50%; border:1.5px solid var(--accent); color:var(--accent); font:600 13px 'Rubik',sans-serif; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.aviso strong { display:block; font:500 14px 'Rubik',sans-serif; color:var(--text); margin-bottom:2px; }
+.aviso span { font-size:13px; color:var(--muted); }
+.aviso-info { background:var(--infobg); border-color:var(--line2); border-left-color:var(--infoline); }
+.aviso-error { background:var(--errbg); border-color:var(--line2); border-left-color:var(--errline); }
+.nota { font-size:12px; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin:4px 0 14px 0; }
+.nota b { color:var(--text); }
+.btg-box, .dest-box { border-radius:8px; padding:14px 18px; margin:10px 0 16px 0; display:flex; align-items:center; justify-content:space-between; min-height:96px; background:var(--surface); border:1px solid var(--line); }
+.btg-box  { border-left:3px solid var(--accent); }
+.dest-box { border-left:3px solid var(--text); }
+.btg-label, .dest-label { font-size:11px; font-weight:600; color:var(--subtle); text-transform:uppercase; letter-spacing:.1em; }
+.btg-numero { font:500 24px 'Rubik',sans-serif; color:var(--text); margin-top:3px; }
+.btg-nome { font-size:14px; color:var(--muted); margin-top:4px; }
+.dest-banco { font:500 20px 'Rubik',sans-serif; color:var(--text); margin-top:3px; }
+.dest-detalhe { font-size:13px; color:var(--muted); margin-top:4px; line-height:1.55; }
 .box-content { display:flex; flex-direction:column; justify-content:center; }
-.bank-logo { height:64px; width:auto; max-width:100px; object-fit:contain; border-radius:6px; flex-shrink:0; margin-left:16px; }
-.col-h { font:600 12px 'Rubik',sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--grafite); display:flex; justify-content:space-between; padding-bottom:10px; border-bottom:2px solid var(--navy); margin-bottom:12px; }
-.col-h.c2 { border-bottom-color:var(--gold); }
-.col-h.c3 { border-bottom-color:var(--sand); }
-.col-h span { background:var(--navy); color:#fff; border-radius:10px; padding:0 8px; font-size:11px; line-height:18px; }
-.sol-card { border-radius:8px; padding:14px 16px; margin:8px 0; background:#fff; border:1px solid var(--line); }
-.sol-cliente { font:500 15px 'Rubik',sans-serif; color:var(--navy); }
-.sol-detalhe { font-size:13px; color:var(--grafite); margin-top:2px; }
-.sol-data    { font-size:12px; color:#7b8591; margin-top:4px; }
-.sol-aviso   { font-size:12px; color:var(--gold); margin-top:6px; font-weight:600; }
-.w-aviso { background:var(--sand-l) !important; border:1px solid #e3dccb !important; border-left:4px solid var(--gold) !important; border-radius:6px !important; color:var(--grafite) !important; font-size:13px !important; }
-.w-card { background:#fff !important; border:1px solid var(--line) !important; border-radius:8px !important; color:var(--navy) !important; }
-.w-aviso-cut { color:var(--gold) !important; }
+.bank-logo { height:64px; width:auto; max-width:100px; object-fit:contain; border-radius:6px; flex-shrink:0; margin-left:16px; background:#fff; padding:4px; }
+.col-h { font:600 12px 'Rubik',sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; padding-bottom:10px; border-bottom:2px solid var(--text); margin-bottom:12px; }
+.col-h.c2 { border-bottom-color:var(--accent); }
+.col-h.c3 { border-bottom-color:var(--subtle); }
+.col-h span { background:var(--pbg); color:var(--pfg); border-radius:10px; padding:0 8px; font-size:11px; line-height:18px; }
+.sol-card { border-radius:8px; padding:14px 16px; margin:8px 0; background:var(--surface); border:1px solid var(--line); }
+.sol-cliente { font:500 15px 'Rubik',sans-serif; color:var(--text); }
+.sol-detalhe { font-size:13px; color:var(--muted); margin-top:2px; }
+.sol-data    { font-size:12px; color:var(--subtle); margin-top:4px; }
+.sol-aviso   { font-size:12px; color:var(--accent); margin-top:6px; font-weight:600; }
+.w-aviso { background:var(--sandl) !important; border:1px solid var(--aline) !important; border-left:4px solid var(--accent) !important; border-radius:6px !important; color:var(--muted) !important; font-size:13px !important; }
+.w-aviso b, .w-aviso strong { color:var(--text) !important; }
+.w-card { background:var(--surface) !important; border:1px solid var(--line) !important; border-radius:8px !important; color:var(--text) !important; }
+.w-aviso-cut { color:var(--accent) !important; }
 </style>
-""", unsafe_allow_html=True)
+""".replace("__CLARO__", _TEMA_CLARO).replace("__ESCURO__", _TEMA_ESCURO), unsafe_allow_html=True)
 
 BANCOS = [
     ("001", "Banco do Brasil"),
@@ -201,6 +230,10 @@ LOGO_SWM_BRANCO_B64 = "PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxuc
 def _logo_swm(classe="topo-logo", branco=False):
     b64 = LOGO_SWM_BRANCO_B64 if branco else LOGO_SWM_B64
     return f'<img class="{classe}" alt="SWM MFO" src="data:image/svg+xml;base64,{b64}">'
+
+def _logo_topo():
+    """Logo do cabeçalho: azul no tema claro, branco no escuro (troca por CSS: sistema ou seletor Tema)."""
+    return (f'<span class="logo-claro">{_logo_swm()}</span><span class="logo-escuro">{_logo_swm(branco=True)}</span>')
 
 def fmt_money(val):
     return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -422,14 +455,14 @@ if not st.session_state.logado:
     # Login dividido (mockup): painel azul fixo à esquerda + formulário à direita.
     st.markdown("""
 <style>
-.stApp { background:#fff; }
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] { background:var(--surface); }
 .block-container { max-width:100% !important; padding:0 !important; }
 .lg-panel { position:fixed; left:0; top:0; bottom:0; width:52vw; background:#102134; color:#fff; padding:56px; display:flex; flex-direction:column; justify-content:space-between; z-index:1001; }
 .lg-panel img { height:96px; width:auto; align-self:flex-start; }
 .lg-panel::after { content:""; position:absolute; left:56px; right:56px; bottom:112px; height:1px; background:#896F3D; }
-.lg-h { font-family:'Rubik',sans-serif; font-weight:400; font-size:30px; line-height:1.25; max-width:420px; color:#fff; }
-.lg-p { color:#C8BEAA; font-size:13px; margin:14px 0 0 0; max-width:400px; }
-.lg-foot { color:#8fa0b5; font-size:11px; letter-spacing:.04em; }
+.lg-h { font-family:'Rubik',sans-serif; font-weight:400; font-size:30px; line-height:1.25; max-width:420px; color:#fff !important; }
+.lg-p { color:#C8BEAA !important; font-size:13px; margin:14px 0 0 0; max-width:400px; }
+.lg-foot { color:#9fb0c4 !important; font-size:11px; letter-spacing:.04em; }
 div[data-testid="stColumn"]:nth-of-type(2), div[data-testid="column"]:nth-of-type(2) { padding:20vh 8vw 0 6vw; }
 div[data-testid="stForm"] { border:none; padding:0; background:transparent; }
 @media (max-width: 860px) { .lg-panel { display:none; } div[data-testid="stColumn"]:nth-of-type(2), div[data-testid="column"]:nth-of-type(2) { padding:8vh 6vw 0 6vw; } }
@@ -438,7 +471,7 @@ div[data-testid="stForm"] { border:none; padding:0; background:transparent; }
     st.markdown(
         '<div class="lg-panel">' + _logo_swm("", branco=True) +
         '<div><div class="lg-h">Solicitação de TED e Wire</div>'
-        '<p class="lg-p">Plataforma interna da gestão para bankers e RI com controle e rastreabilidade.</p></div>'
+        '<div class="lg-p">Plataforma interna da gestão para bankers e RI com controle e rastreabilidade.</div></div>'
         '<div class="lg-foot">SWM MFO · Acesso restrito a colaboradores autorizados</div></div>',
         unsafe_allow_html=True,
     )
@@ -447,7 +480,7 @@ div[data-testid="stForm"] { border:none; padding:0; background:transparent; }
         st.markdown(
             '<div class="eyebrow">Acesso restrito</div>'
             '<div class="login-h1">Entrar</div>'
-            '<p class="login-sub" style="margin-bottom:22px">Use seu usuário e senha da plataforma.</p>',
+            '<div class="login-sub" style="margin-bottom:22px">Use seu usuário e senha da plataforma.</div>',
             unsafe_allow_html=True,
         )
         with st.form("login"):
@@ -470,10 +503,15 @@ div[data-testid="stForm"] { border:none; padding:0; background:transparent; }
     st.stop()
 
 # ── HEADER ────────────────────────────────────────────────────────────────
-c1, c2 = st.columns([5, 1])
-c1.markdown(f'<div class="topo-user">{_logo_swm()}<div class="topo-nome"><b>{st.session_state.banker_nome}</b>TED &amp; Wire</div></div>', unsafe_allow_html=True)
+c1, ctema, c2 = st.columns([5, 1.3, 1])
+c1.markdown(f'<div class="topo-user">{_logo_topo()}<div class="topo-nome"><b>{st.session_state.banker_nome}</b>TED &amp; Wire</div></div>', unsafe_allow_html=True)
 import sheets as _sheets_mod
 c1.caption("versão 21/10 · filtro offshore: " + ("ativo" if getattr(_sheets_mod, "FILTRO_OFF_ATIVO", False) else "INATIVO (sheets.py desatualizado)"))
+_tema = ctema.selectbox("Tema", ["Automático", "Claro", "Escuro"], key="tema", label_visibility="collapsed")
+if _tema == "Claro":
+    st.markdown("<style>:root{" + _TEMA_CLARO + "} .logo-escuro{display:none !important} .logo-claro{display:inline !important}</style>", unsafe_allow_html=True)
+elif _tema == "Escuro":
+    st.markdown("<style>:root{" + _TEMA_ESCURO + "} .logo-claro{display:none !important} .logo-escuro{display:inline !important}</style>", unsafe_allow_html=True)
 if c2.button("Sair"):
     for k in list(st.session_state.keys()):
         del st.session_state[k]
