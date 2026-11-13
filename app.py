@@ -20,14 +20,14 @@ CUTOFF_HOUR = 16
 # ══ AVISO NO TOPO DA TELA DE TEDs ═════════════════════════════════════════
 # Para TIRAR o aviso: comente o bloco AVISO_TED abaixo e descomente "AVISO_TED = None".
 # Para TROCAR: edite titulo/texto.  tipo: "info" (azul) | "warn" (amarelo) | "error" (vermelho)
-AVISO_TED = {
-    "tipo":   "warn",
-    "titulo": "Atenção — e-mails de TED indisponíveis",
-    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
-               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
-               "confirmação nem de comprovante da TED por enquanto."),
+#AVISO_TED = {
+#    "tipo":   "warn",
+#    "titulo": "Atenção — e-mails de TED indisponíveis",
+#    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
+#               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
+#               "confirmação nem de comprovante da TED por enquanto."),
 }
-# AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
+ AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
 
 st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
 
