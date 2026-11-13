@@ -18,17 +18,19 @@ TZ = ZoneInfo("America/Sao_Paulo")
 CUTOFF_HOUR = 16
 
 # ══ AVISO NO TOPO DA TELA DE TEDs ═════════════════════════════════════════
-# Para TIRAR o aviso: comente o bloco AVISO_TED abaixo e descomente "AVISO_TED = None".
-# Para TROCAR: edite titulo/texto.  tipo: "info" (azul) | "warn" (amarelo) | "error" (vermelho)
-AVISO_TED = {
-    "tipo":   "warn",
-    "titulo": "Atenção — e-mails de TED indisponíveis",
-    "email_indisponivel": True,   # True = a tela de sucesso deixa de prometer e-mail de confirmação
-    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
-               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
-               "confirmação nem de comprovante da TED por enquanto."),
-}
-# AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
+# Hoje: SEM aviso (AVISO_TED = None). Para LIGAR um aviso: descomente o bloco "AVISO_TED = {...}" abaixo,
+# ajuste o texto e comente a linha "AVISO_TED = None".  Para DESLIGAR: faça o contrário.
+# tipo: "info" (azul) | "warn" (amarelo) | "error" (vermelho)
+# "email_indisponivel": True faz a tela de sucesso deixar de prometer e-mail de confirmação (use só se for esse o caso).
+# AVISO_TED = {
+#     "tipo":   "warn",
+#     "titulo": "Atenção — e-mails de TED indisponíveis",
+#     "email_indisponivel": True,
+#     "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
+#                "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
+#                "confirmação nem de comprovante da TED por enquanto."),
+# }
+AVISO_TED = None   # ← sem aviso no momento
 EMAIL_CONFIRMACAO_INDISPONIVEL = bool(AVISO_TED and AVISO_TED.get("email_indisponivel"))
 
 st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="wide")
@@ -194,8 +196,11 @@ for k, v in [
 
 LOGO_SWM_B64 = "PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4NDEuODkgNDM4LjgxIj4gPGRlZnM+IDxzdHlsZT4gLmNscy0xIHsgZmlsbDogIzEwMjEzNDsgfSA8L3N0eWxlPiA8L2RlZnM+IDxnPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMTMuNTgsMjk0LjI4Yy0yMS42MiwwLTQxLjY2LTkuMzItNTAuMTktMjguMDNsLTExLjIzLDEwLjA1YzkuMTEsMjAuMDQsMzMuNCwzMS43OSw2MC4zNiwzMS43OSwzNS40OSwwLDU4LjcyLTIxLjI1LDU4LjcyLTQ5Ljk1LDAtMjMuNS0xNS4xOC0zOC45OS00MS42My00NC44NWwtMjIuNzEtNS4wN2MtMjAuNTYtNC41NS0zMC43LTE0LjctMzAuNy0zMi4wNiwwLTIwLjAxLDE0LjY3LTM1LjI1LDM5LjQ3LTM1LjI1LDE4LjcsMCwzNi4wNyw4LjI5LDQzLjgxLDI1LjM4bDExLjQ4LTEwLjE0Yy04Ljg0LTE4LjIyLTMwLjczLTI5LjEyLTU0LjY1LTI5LjEyLTMzLjY0LDAtNTYuNiwyMS44OS01Ni42LDQ5Ljk1LS4wNiwyMy40MSwxMy41NCwzOC4yNiw0MS4wNSw0NC42NmwyMi40MSw1LjM0YzIyLjIsNS4zNCwzMS41MiwxNS45MSwzMS41MiwzMS43OSwwLDIwLjU2LTE0Ljk0LDM1LjQ5LTQxLjExLDM1LjQ5Ii8+IDxwb2x5Z29uIGNsYXNzPSJjbHMtMSIgcG9pbnRzPSI3MDEuOTQgMjQ5LjcxIDYzMS40NCAxMjkuNTMgNjE2Ljc0IDEyOS41MyA2MTYuNzQgMzA1Ljc2IDYzMS45OCAzMDUuNzYgNjMxLjk4IDE1OS4xNyA2OTYuODcgMjY5LjQ4IDcwNS45NSAyNjkuNDggNzcwLjgzIDE1OS4xNyA3NzAuODMgMzA1Ljc2IDc4Ni4wNCAzMDUuNzYgNzg2LjA0IDEyOS41MyA3NzIuMTcgMTI5LjUzIDcwMS45NCAyNDkuNzEiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTA4LjUzLDI4NS40MmwtNTUuNTMtMTU1Ljg4aC0xNi44MmwyMC4wMSw1Ni4wOC00MC4wNSwxMDAuNjgtNDYuMzMtMTMwLjU2aDBDMzM3LjMsNjYuNCwyMzguNTMsMjAuMzMsMTQ5LjE5LDUyLjgzLDU5Ljg2LDg1LjMzLDEzLjc4LDE4NC4xLDQ2LjI5LDI3My40M2MzMi41LDg5LjM0LDEzMS4yNywxMzUuNDEsMjIwLjYsMTAyLjkxLDI5LjI5LTEwLjY2LDU1LjE1LTI5LjA3LDc0Ljc5LTUzLjI3aC04LjA1Yy01OS44Nyw2OS4zOS0xNjQuNjUsNzcuMS0yMzQuMDMsMTcuMjMtNjkuMzktNTkuODctNzcuMS0xNjQuNjUtMTcuMjMtMjM0LjAzLDU5Ljg3LTY5LjM5LDE2NC42NS03Ny4xLDIzNC4wMy0xNy4yMyw1LjMyLDQuNTksMTAuMzUsOS41MiwxNS4wNSwxNC43NSw3LjE0LDcuNjUsMTIuNjMsMjUuODQsMTIuNjMsMjUuODRoMGwxNy44Miw1MC4yOCw0NC42LDEyNS44NWgxNi41NWw0MC4zMi0xMDEuNzIsMzYuNDQsMTAxLjcyaDE2LjU1bDYyLjQ5LTE3Ni4xMWgtMTYuM2wtNTQuMDIsMTU1Ljc2Wk0zNDQuNTcsMTI5LjQ3Ii8+IDwvZz4gPGc+IDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTY2Ny4wNSwzODUuODFsLS4wNy0zOS4wOC0xOS4zOSwzMi41N2gtMy41M2wtMTkuMzktMzIuMzR2MzguODVoLTcuMzZ2LTUzLjY0aDYuMjhsMjIuMzcsMzcuNywyMi4wNy0zNy43aDYuMjlsLjA3LDUzLjY0aC03LjM2WiIvPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik02OTguMTUsMzM4LjgzdjE4LjdoMjYuOXY2LjU5aC0yNi45djIxLjY5aC03LjY2di01My42NGgzNy44NnY2LjY3aC0zMC4xOVoiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNzM0LjE1LDM1OC45OWMwLTE1LjcxLDEyLjExLTI3LjQzLDI4LjU4LTI3LjQzczI4LjQzLDExLjY1LDI4LjQzLDI3LjQzLTEyLjExLDI3LjQzLTI4LjQzLDI3LjQzLTI4LjU4LTExLjcyLTI4LjU4LTI3LjQzWk03ODMuNSwzNTguOTljMC0xMS44OC04Ljg5LTIwLjYxLTIwLjc3LTIwLjYxcy0yMC45Miw4Ljc0LTIwLjkyLDIwLjYxLDguODksMjAuNjEsMjAuOTIsMjAuNjEsMjAuNzctOC43NCwyMC43Ny0yMC42MVoiLz4gPC9nPiA8L3N2Zz4="   # logo oficial SWM MFO (SVG azul) embutido — o app é um arquivo só
 
-def _logo_swm(classe="topo-logo"):
-    return f'<img class="{classe}" alt="SWM MFO" src="data:image/svg+xml;base64,{LOGO_SWM_B64}">'
+LOGO_SWM_BRANCO_B64 = "PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4NDEuODkgNDM4LjgxIj4gPGRlZnM+IDxzdHlsZT4gLmNscy0xIHsgZmlsbDogI2ZmZmZmZjsgfSA8L3N0eWxlPiA8L2RlZnM+IDxnPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMTMuNTgsMjk0LjI4Yy0yMS42MiwwLTQxLjY2LTkuMzItNTAuMTktMjguMDNsLTExLjIzLDEwLjA1YzkuMTEsMjAuMDQsMzMuNCwzMS43OSw2MC4zNiwzMS43OSwzNS40OSwwLDU4LjcyLTIxLjI1LDU4LjcyLTQ5Ljk1LDAtMjMuNS0xNS4xOC0zOC45OS00MS42My00NC44NWwtMjIuNzEtNS4wN2MtMjAuNTYtNC41NS0zMC43LTE0LjctMzAuNy0zMi4wNiwwLTIwLjAxLDE0LjY3LTM1LjI1LDM5LjQ3LTM1LjI1LDE4LjcsMCwzNi4wNyw4LjI5LDQzLjgxLDI1LjM4bDExLjQ4LTEwLjE0Yy04Ljg0LTE4LjIyLTMwLjczLTI5LjEyLTU0LjY1LTI5LjEyLTMzLjY0LDAtNTYuNiwyMS44OS01Ni42LDQ5Ljk1LS4wNiwyMy40MSwxMy41NCwzOC4yNiw0MS4wNSw0NC42NmwyMi40MSw1LjM0YzIyLjIsNS4zNCwzMS41MiwxNS45MSwzMS41MiwzMS43OSwwLDIwLjU2LTE0Ljk0LDM1LjQ5LTQxLjExLDM1LjQ5Ii8+IDxwb2x5Z29uIGNsYXNzPSJjbHMtMSIgcG9pbnRzPSI3MDEuOTQgMjQ5LjcxIDYzMS40NCAxMjkuNTMgNjE2Ljc0IDEyOS41MyA2MTYuNzQgMzA1Ljc2IDYzMS45OCAzMDUuNzYgNjMxLjk4IDE1OS4xNyA2OTYuODcgMjY5LjQ4IDcwNS45NSAyNjkuNDggNzcwLjgzIDE1OS4xNyA3NzAuODMgMzA1Ljc2IDc4Ni4wNCAzMDUuNzYgNzg2LjA0IDEyOS41MyA3NzIuMTcgMTI5LjUzIDcwMS45NCAyNDkuNzEiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTA4LjUzLDI4NS40MmwtNTUuNTMtMTU1Ljg4aC0xNi44MmwyMC4wMSw1Ni4wOC00MC4wNSwxMDAuNjgtNDYuMzMtMTMwLjU2aDBDMzM3LjMsNjYuNCwyMzguNTMsMjAuMzMsMTQ5LjE5LDUyLjgzLDU5Ljg2LDg1LjMzLDEzLjc4LDE4NC4xLDQ2LjI5LDI3My40M2MzMi41LDg5LjM0LDEzMS4yNywxMzUuNDEsMjIwLjYsMTAyLjkxLDI5LjI5LTEwLjY2LDU1LjE1LTI5LjA3LDc0Ljc5LTUzLjI3aC04LjA1Yy01OS44Nyw2OS4zOS0xNjQuNjUsNzcuMS0yMzQuMDMsMTcuMjMtNjkuMzktNTkuODctNzcuMS0xNjQuNjUtMTcuMjMtMjM0LjAzLDU5Ljg3LTY5LjM5LDE2NC42NS03Ny4xLDIzNC4wMy0xNy4yMyw1LjMyLDQuNTksMTAuMzUsOS41MiwxNS4wNSwxNC43NSw3LjE0LDcuNjUsMTIuNjMsMjUuODQsMTIuNjMsMjUuODRoMGwxNy44Miw1MC4yOCw0NC42LDEyNS44NWgxNi41NWw0MC4zMi0xMDEuNzIsMzYuNDQsMTAxLjcyaDE2LjU1bDYyLjQ5LTE3Ni4xMWgtMTYuM2wtNTQuMDIsMTU1Ljc2Wk0zNDQuNTcsMTI5LjQ3Ii8+IDwvZz4gPGc+IDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTY2Ny4wNSwzODUuODFsLS4wNy0zOS4wOC0xOS4zOSwzMi41N2gtMy41M2wtMTkuMzktMzIuMzR2MzguODVoLTcuMzZ2LTUzLjY0aDYuMjhsMjIuMzcsMzcuNywyMi4wNy0zNy43aDYuMjlsLjA3LDUzLjY0aC03LjM2WiIvPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik02OTguMTUsMzM4LjgzdjE4LjdoMjYuOXY2LjU5aC0yNi45djIxLjY5aC03LjY2di01My42NGgzNy44NnY2LjY3aC0zMC4xOVoiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNzM0LjE1LDM1OC45OWMwLTE1LjcxLDEyLjExLTI3LjQzLDI4LjU4LTI3LjQzczI4LjQzLDExLjY1LDI4LjQzLDI3LjQzLTEyLjExLDI3LjQzLTI4LjQzLDI3LjQzLTI4LjU4LTExLjcyLTI4LjU4LTI3LjQzWk03ODMuNSwzNTguOTljMC0xMS44OC04Ljg5LTIwLjYxLTIwLjc3LTIwLjYxcy0yMC45Miw4Ljc0LTIwLjkyLDIwLjYxLDguODksMjAuNjEsMjAuOTIsMjAuNjEsMjAuNzctOC43NCwyMC43Ny0yMC42MVoiLz4gPC9nPiA8L3N2Zz4="   # mesma logo em branco, para fundo azul
+
+def _logo_swm(classe="topo-logo", branco=False):
+    b64 = LOGO_SWM_BRANCO_B64 if branco else LOGO_SWM_B64
+    return f'<img class="{classe}" alt="SWM MFO" src="data:image/svg+xml;base64,{b64}">'
 
 def fmt_money(val):
     return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -414,12 +419,35 @@ def render_board():
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
-    _, cmid, _ = st.columns([1, 1.5, 1])
-    with cmid:
+    # Login dividido (mockup): painel azul fixo à esquerda + formulário à direita.
+    st.markdown("""
+<style>
+.stApp { background:#fff; }
+.block-container { max-width:100% !important; padding:0 !important; }
+.lg-panel { position:fixed; left:0; top:0; bottom:0; width:52vw; background:#102134; color:#fff; padding:56px; display:flex; flex-direction:column; justify-content:space-between; z-index:1001; }
+.lg-panel img { height:96px; width:auto; align-self:flex-start; }
+.lg-panel::after { content:""; position:absolute; left:56px; right:56px; bottom:112px; height:1px; background:#896F3D; }
+.lg-h { font-family:'Rubik',sans-serif; font-weight:400; font-size:30px; line-height:1.25; max-width:420px; color:#fff; }
+.lg-p { color:#C8BEAA; font-size:13px; margin:14px 0 0 0; max-width:400px; }
+.lg-foot { color:#8fa0b5; font-size:11px; letter-spacing:.04em; }
+div[data-testid="stColumn"]:nth-of-type(2), div[data-testid="column"]:nth-of-type(2) { padding:20vh 8vw 0 6vw; }
+div[data-testid="stForm"] { border:none; padding:0; background:transparent; }
+@media (max-width: 860px) { .lg-panel { display:none; } div[data-testid="stColumn"]:nth-of-type(2), div[data-testid="column"]:nth-of-type(2) { padding:8vh 6vw 0 6vw; } }
+</style>
+""", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="lg-panel">' + _logo_swm("", branco=True) +
+        '<div><div class="lg-h">Solicitação de TED e Wire</div>'
+        '<p class="lg-p">Plataforma interna da gestão para bankers e RI com controle e rastreabilidade.</p></div>'
+        '<div class="lg-foot">SWM MFO · Acesso restrito a colaboradores autorizados</div></div>',
+        unsafe_allow_html=True,
+    )
+    _esq, _dir = st.columns([52, 48])
+    with _dir:
         st.markdown(
-            f'<div class="login-box">{_logo_swm()}<div class="eyebrow">Acesso restrito</div>'
-            '<div class="login-h1">Solicitação de TED e Wire</div>'
-            '<p class="login-sub">Plataforma interna da gestão para bankers e RI com controle e rastreabilidade.</p></div>',
+            '<div class="eyebrow">Acesso restrito</div>'
+            '<div class="login-h1">Entrar</div>'
+            '<p class="login-sub" style="margin-bottom:22px">Use seu usuário e senha da plataforma.</p>',
             unsafe_allow_html=True,
         )
         with st.form("login"):
