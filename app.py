@@ -26,7 +26,7 @@ CUTOFF_HOUR = 16
 #    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
 #               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
 #               "confirmação nem de comprovante da TED por enquanto."),
-}
+#}
  AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
 
 st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
