@@ -20,45 +20,89 @@ CUTOFF_HOUR = 16
 # ══ AVISO NO TOPO DA TELA DE TEDs ═════════════════════════════════════════
 # Para TIRAR o aviso: comente o bloco AVISO_TED abaixo e descomente "AVISO_TED = None".
 # Para TROCAR: edite titulo/texto.  tipo: "info" (azul) | "warn" (amarelo) | "error" (vermelho)
-#AVISO_TED = {
-#    "tipo":   "warn",
-#    "titulo": "Atenção — e-mails de TED indisponíveis",
-#    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
-#               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
-#               "confirmação nem de comprovante da TED por enquanto."),
-#}
-AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
+AVISO_TED = {
+    "tipo":   "warn",
+    "titulo": "Atenção — e-mails de TED indisponíveis",
+    "email_indisponivel": True,   # True = a tela de sucesso deixa de prometer e-mail de confirmação
+    "texto":  ("As TEDs continuam chegando normalmente no nosso pipeline e serão processadas por nós. "
+               "Porém, devido ao problema global da Microsoft, NÃO serão enviados os e-mails de "
+               "confirmação nem de comprovante da TED por enquanto."),
+}
+# AVISO_TED = None   # ← descomente (e comente o bloco acima) para desligar o aviso
+EMAIL_CONFIRMACAO_INDISPONIVEL = bool(AVISO_TED and AVISO_TED.get("email_indisponivel"))
 
-st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="centered")
+st.set_page_config(page_title="TED & Wire — SWM", page_icon="💸", layout="wide")
 
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Rubik:wght@400;500;600&display=swap');
+:root { --navy:#102134; --navy2:#1A293F; --gold:#896F3D; --sand:#C8BEAA; --sand-l:#F4F1EB; --grafite:#404751; --bg:#F3F4F6; --line:#E1E4E8; }
+html, body, .stApp, [data-testid="stAppViewContainer"], .stMarkdown, .stTextInput, .stSelectbox, .stButton, label, p, li, span, input, textarea { font-family: 'Montserrat', system-ui, sans-serif; }
+.stApp { background: var(--bg); color: var(--navy); }
 #MainMenu, footer, header { visibility: hidden }
-.btg-box, .dest-box {
-    border-radius: 10px; padding: 14px 18px; margin: 10px 0 16px 0;
-    display: flex; align-items: center; justify-content: space-between; min-height: 96px;
-}
-.btg-box  { background: #eff6ff; border: 1.5px solid #bfdbfe; }
-.dest-box { background: #f8fafc; border: 1.5px solid #cbd5e1; }
-.btg-label  { font-size: 11px; font-weight: 600; color: #3b82f6;
-               text-transform: uppercase; letter-spacing: .07em }
-.btg-numero { font-size: 26px; font-weight: 700; color: #1d4ed8; margin-top: 3px }
-.btg-nome   { font-size: 14px; color: #334155; margin-top: 4px }
-.dest-label   { font-size: 11px; font-weight: 600; color: #64748b;
-                 text-transform: uppercase; letter-spacing: .07em }
-.dest-banco   { font-size: 22px; font-weight: 700; color: #1e293b; margin-top: 3px }
-.dest-detalhe { font-size: 14px; color: #475569; margin-top: 4px; line-height: 1.55 }
-.box-content { display: flex; flex-direction: column; justify-content: center; }
-.bank-logo   { height: 76px; width: auto; max-width: 110px; object-fit: contain;
-                border-radius: 8px; flex-shrink: 0; margin-left: 16px; }
-.sol-card {
-    border-radius: 10px; padding: 10px 14px; margin: 8px 0;
-    background: #f8fafc; border: 1.5px solid #cbd5e1;
-}
-.sol-cliente { font-size: 15px; font-weight: 700; color: #1e293b; }
-.sol-detalhe { font-size: 13px; color: #475569; margin-top: 2px; }
-.sol-data    { font-size: 12px; color: #64748b; margin-top: 4px; }
-.sol-aviso   { font-size: 12px; color: #b45309; margin-top: 4px; font-weight: 600; }
+.stApp::before { content:""; position:fixed; top:0; left:0; right:0; height:3px; z-index:1000; background:linear-gradient(to right, var(--gold) 0 72px, var(--navy) 72px); }
+.block-container { max-width: 1080px; padding-top: 1.6rem; padding-bottom: 3rem; }
+h1, h2, h3, h4, [data-testid="stHeading"] { font-family: 'Rubik', sans-serif !important; color: var(--navy); font-weight: 500 !important; letter-spacing: 0; }
+h3, [data-testid="stHeading"] h3 { font-size: 20px !important; margin-top: 4px; }
+[data-testid="stWidgetLabel"] p { font-weight: 600; font-size: 12px; color: var(--grafite); }
+.stButton > button, .stFormSubmitButton > button { font-family:'Rubik',sans-serif; font-weight:500; border-radius:6px; border:1px solid var(--navy); background:#fff; color:var(--navy); padding:.55rem 1.2rem; }
+.stButton > button:hover, .stFormSubmitButton > button:hover { border-color:var(--navy2); color:var(--navy2); background:#fafbfc; }
+button[kind="primary"], button[kind="primaryFormSubmit"], button[data-testid="stBaseButton-primary"], button[data-testid="stBaseButton-primaryFormSubmit"] { background:var(--navy) !important; color:#fff !important; border:1px solid var(--navy) !important; }
+button[kind="primary"]:hover, button[kind="primaryFormSubmit"]:hover, button[data-testid="stBaseButton-primary"]:hover, button[data-testid="stBaseButton-primaryFormSubmit"]:hover { background:var(--navy2) !important; }
+button[kind="primary"] p, button[kind="primaryFormSubmit"] p, button[data-testid="stBaseButton-primary"] p, button[data-testid="stBaseButton-primaryFormSubmit"] p { color:#fff !important; }
+div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"] { border-radius:6px !important; border-color:#cfd4da !important; background:#fff !important; }
+div[data-baseweb="input"]:focus-within, div[data-baseweb="select"] > div:focus-within { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(16,33,52,.08); }
+.stTabs [data-baseweb="tab-list"] { gap:4px; border-bottom:1px solid var(--line); }
+.stTabs [data-baseweb="tab"] { font-family:'Rubik',sans-serif; font-weight:500; color:var(--grafite); padding:8px 16px; }
+.stTabs [aria-selected="true"] { color:var(--navy); }
+.stTabs [data-baseweb="tab-highlight"] { background:var(--gold); height:2px; }
+.stTabs [data-baseweb="tab-border"] { background:transparent; }
+.st-key-menu_principal div[role="radiogroup"] { display:inline-flex; gap:0; border:1px solid #cfd4da; border-radius:8px; padding:3px; background:#fff; }
+.st-key-menu_principal label { margin:0; padding:7px 28px; border-radius:6px; cursor:pointer; }
+.st-key-menu_principal label > div:first-child { display:none; }
+.st-key-menu_principal label p { font-family:'Rubik',sans-serif; font-weight:500; font-size:13px; margin:0; color:var(--grafite); }
+.st-key-menu_principal label:has(input:checked) { background:var(--navy); }
+.st-key-menu_principal label:has(input:checked) p { color:#fff; }
+div[data-testid="stAlert"] { border-radius:6px; }
+.topo-user { display:flex; align-items:center; gap:18px; }
+.topo-logo { height:46px; width:auto; }
+.topo-nome { font-size:13px; color:var(--grafite); border-left:1px solid var(--line); padding-left:18px; line-height:1.3; }
+.topo-nome b { color:var(--navy); font-family:'Rubik',sans-serif; font-weight:500; display:block; }
+.login-box { text-align:left; margin:6vh 0 18px 0; }
+.login-box .topo-logo { height:64px; margin-bottom:28px; }
+.eyebrow { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+.login-h1 { font-family:'Rubik',sans-serif; font-weight:500; font-size:28px; color:var(--navy); margin:6px 0 6px 0; line-height:1.25; }
+.login-sub { color:var(--grafite); font-size:13px; margin:0; }
+.aviso { display:flex; gap:14px; background:var(--sand-l); border:1px solid #e3dccb; border-left:4px solid var(--gold); border-radius:6px; padding:14px 18px; margin:14px 0 20px 0; }
+.aviso .ic { flex:0 0 22px; height:22px; border-radius:50%; border:1.5px solid var(--gold); color:var(--gold); font:600 13px 'Rubik',sans-serif; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.aviso strong { display:block; font:500 14px 'Rubik',sans-serif; color:var(--navy); margin-bottom:2px; }
+.aviso span { font-size:13px; color:var(--grafite); }
+.aviso-info { background:#eff6ff; border-color:#bfdbfe; border-left-color:#3E5A7A; }
+.aviso-error { background:#fef2f2; border-color:#fecaca; border-left-color:#b91c1c; }
+.nota { font-size:12px; color:var(--grafite); background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin:4px 0 14px 0; }
+.nota b { color:var(--navy); }
+.btg-box, .dest-box { border-radius:8px; padding:14px 18px; margin:10px 0 16px 0; display:flex; align-items:center; justify-content:space-between; min-height:96px; background:#fff; border:1px solid var(--line); }
+.btg-box  { border-left:3px solid var(--gold); }
+.dest-box { border-left:3px solid var(--navy); }
+.btg-label, .dest-label { font-size:11px; font-weight:600; color:var(--grafite); text-transform:uppercase; letter-spacing:.1em; }
+.btg-numero { font:500 24px 'Rubik',sans-serif; color:var(--navy); margin-top:3px; }
+.btg-nome { font-size:14px; color:var(--grafite); margin-top:4px; }
+.dest-banco { font:500 20px 'Rubik',sans-serif; color:var(--navy); margin-top:3px; }
+.dest-detalhe { font-size:13px; color:var(--grafite); margin-top:4px; line-height:1.55; }
+.box-content { display:flex; flex-direction:column; justify-content:center; }
+.bank-logo { height:64px; width:auto; max-width:100px; object-fit:contain; border-radius:6px; flex-shrink:0; margin-left:16px; }
+.col-h { font:600 12px 'Rubik',sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--grafite); display:flex; justify-content:space-between; padding-bottom:10px; border-bottom:2px solid var(--navy); margin-bottom:12px; }
+.col-h.c2 { border-bottom-color:var(--gold); }
+.col-h.c3 { border-bottom-color:var(--sand); }
+.col-h span { background:var(--navy); color:#fff; border-radius:10px; padding:0 8px; font-size:11px; line-height:18px; }
+.sol-card { border-radius:8px; padding:14px 16px; margin:8px 0; background:#fff; border:1px solid var(--line); }
+.sol-cliente { font:500 15px 'Rubik',sans-serif; color:var(--navy); }
+.sol-detalhe { font-size:13px; color:var(--grafite); margin-top:2px; }
+.sol-data    { font-size:12px; color:#7b8591; margin-top:4px; }
+.sol-aviso   { font-size:12px; color:var(--gold); margin-top:6px; font-weight:600; }
+.w-aviso { background:var(--sand-l) !important; border:1px solid #e3dccb !important; border-left:4px solid var(--gold) !important; border-radius:6px !important; color:var(--grafite) !important; font-size:13px !important; }
+.w-card { background:#fff !important; border:1px solid var(--line) !important; border-radius:8px !important; color:var(--navy) !important; }
+.w-aviso-cut { color:var(--gold) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -147,6 +191,11 @@ for k, v in [
 ]:
     if k not in st.session_state:
         st.session_state[k] = v
+
+LOGO_SWM_B64 = "PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4NDEuODkgNDM4LjgxIj4gPGRlZnM+IDxzdHlsZT4gLmNscy0xIHsgZmlsbDogIzEwMjEzNDsgfSA8L3N0eWxlPiA8L2RlZnM+IDxnPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMTMuNTgsMjk0LjI4Yy0yMS42MiwwLTQxLjY2LTkuMzItNTAuMTktMjguMDNsLTExLjIzLDEwLjA1YzkuMTEsMjAuMDQsMzMuNCwzMS43OSw2MC4zNiwzMS43OSwzNS40OSwwLDU4LjcyLTIxLjI1LDU4LjcyLTQ5Ljk1LDAtMjMuNS0xNS4xOC0zOC45OS00MS42My00NC44NWwtMjIuNzEtNS4wN2MtMjAuNTYtNC41NS0zMC43LTE0LjctMzAuNy0zMi4wNiwwLTIwLjAxLDE0LjY3LTM1LjI1LDM5LjQ3LTM1LjI1LDE4LjcsMCwzNi4wNyw4LjI5LDQzLjgxLDI1LjM4bDExLjQ4LTEwLjE0Yy04Ljg0LTE4LjIyLTMwLjczLTI5LjEyLTU0LjY1LTI5LjEyLTMzLjY0LDAtNTYuNiwyMS44OS01Ni42LDQ5Ljk1LS4wNiwyMy40MSwxMy41NCwzOC4yNiw0MS4wNSw0NC42NmwyMi40MSw1LjM0YzIyLjIsNS4zNCwzMS41MiwxNS45MSwzMS41MiwzMS43OSwwLDIwLjU2LTE0Ljk0LDM1LjQ5LTQxLjExLDM1LjQ5Ii8+IDxwb2x5Z29uIGNsYXNzPSJjbHMtMSIgcG9pbnRzPSI3MDEuOTQgMjQ5LjcxIDYzMS40NCAxMjkuNTMgNjE2Ljc0IDEyOS41MyA2MTYuNzQgMzA1Ljc2IDYzMS45OCAzMDUuNzYgNjMxLjk4IDE1OS4xNyA2OTYuODcgMjY5LjQ4IDcwNS45NSAyNjkuNDggNzcwLjgzIDE1OS4xNyA3NzAuODMgMzA1Ljc2IDc4Ni4wNCAzMDUuNzYgNzg2LjA0IDEyOS41MyA3NzIuMTcgMTI5LjUzIDcwMS45NCAyNDkuNzEiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTA4LjUzLDI4NS40MmwtNTUuNTMtMTU1Ljg4aC0xNi44MmwyMC4wMSw1Ni4wOC00MC4wNSwxMDAuNjgtNDYuMzMtMTMwLjU2aDBDMzM3LjMsNjYuNCwyMzguNTMsMjAuMzMsMTQ5LjE5LDUyLjgzLDU5Ljg2LDg1LjMzLDEzLjc4LDE4NC4xLDQ2LjI5LDI3My40M2MzMi41LDg5LjM0LDEzMS4yNywxMzUuNDEsMjIwLjYsMTAyLjkxLDI5LjI5LTEwLjY2LDU1LjE1LTI5LjA3LDc0Ljc5LTUzLjI3aC04LjA1Yy01OS44Nyw2OS4zOS0xNjQuNjUsNzcuMS0yMzQuMDMsMTcuMjMtNjkuMzktNTkuODctNzcuMS0xNjQuNjUtMTcuMjMtMjM0LjAzLDU5Ljg3LTY5LjM5LDE2NC42NS03Ny4xLDIzNC4wMy0xNy4yMyw1LjMyLDQuNTksMTAuMzUsOS41MiwxNS4wNSwxNC43NSw3LjE0LDcuNjUsMTIuNjMsMjUuODQsMTIuNjMsMjUuODRoMGwxNy44Miw1MC4yOCw0NC42LDEyNS44NWgxNi41NWw0MC4zMi0xMDEuNzIsMzYuNDQsMTAxLjcyaDE2LjU1bDYyLjQ5LTE3Ni4xMWgtMTYuM2wtNTQuMDIsMTU1Ljc2Wk0zNDQuNTcsMTI5LjQ3Ii8+IDwvZz4gPGc+IDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTY2Ny4wNSwzODUuODFsLS4wNy0zOS4wOC0xOS4zOSwzMi41N2gtMy41M2wtMTkuMzktMzIuMzR2MzguODVoLTcuMzZ2LTUzLjY0aDYuMjhsMjIuMzcsMzcuNywyMi4wNy0zNy43aDYuMjlsLjA3LDUzLjY0aC03LjM2WiIvPiA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik02OTguMTUsMzM4LjgzdjE4LjdoMjYuOXY2LjU5aC0yNi45djIxLjY5aC03LjY2di01My42NGgzNy44NnY2LjY3aC0zMC4xOVoiLz4gPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNzM0LjE1LDM1OC45OWMwLTE1LjcxLDEyLjExLTI3LjQzLDI4LjU4LTI3LjQzczI4LjQzLDExLjY1LDI4LjQzLDI3LjQzLTEyLjExLDI3LjQzLTI4LjQzLDI3LjQzLTI4LjU4LTExLjcyLTI4LjU4LTI3LjQzWk03ODMuNSwzNTguOTljMC0xMS44OC04Ljg5LTIwLjYxLTIwLjc3LTIwLjYxcy0yMC45Miw4Ljc0LTIwLjkyLDIwLjYxLDguODksMjAuNjEsMjAuOTIsMjAuNjEsMjAuNzctOC43NCwyMC43Ny0yMC42MVoiLz4gPC9nPiA8L3N2Zz4="   # logo oficial SWM MFO (SVG azul) embutido — o app é um arquivo só
+
+def _logo_swm(classe="topo-logo"):
+    return f'<img class="{classe}" alt="SWM MFO" src="data:image/svg+xml;base64,{LOGO_SWM_B64}">'
 
 def fmt_money(val):
     return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -345,19 +394,19 @@ def render_board():
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"**Pendente** &nbsp;·&nbsp; {len(pendentes)}")
+        st.markdown(f'<div class="col-h">Pendente <span>{len(pendentes)}</span></div>', unsafe_allow_html=True)
         if not pendentes:
             st.caption("Nenhuma solicitação pendente.")
         for s in pendentes:
             solicitacao_card(s)
     with col2:
-        st.markdown(f"**Em Processo** &nbsp;·&nbsp; {len(em_processo)}")
+        st.markdown(f'<div class="col-h c2">Em processo <span>{len(em_processo)}</span></div>', unsafe_allow_html=True)
         if not em_processo:
             st.caption("Nenhuma solicitação em processo.")
         for s in em_processo:
             solicitacao_card(s)
     with col3:
-        st.markdown(f"**Em Aprovação Cliente** &nbsp;·&nbsp; {len(em_aprov_cliente)}")
+        st.markdown(f'<div class="col-h c3">Em aprovação do cliente <span>{len(em_aprov_cliente)}</span></div>', unsafe_allow_html=True)
         if not em_aprov_cliente:
             st.caption("Nenhuma solicitação em aprovação do cliente.")
         for s in em_aprov_cliente:
@@ -365,43 +414,48 @@ def render_board():
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────
 if not st.session_state.logado:
-    st.markdown("### SWM Gestão")
-    st.title("TED & Wire")
-    st.write("")
-    with st.form("login"):
-        usuario = st.text_input("Usuário")
-        senha   = st.text_input("Senha", type="password")
-        entrar  = st.form_submit_button("Entrar", use_container_width=True, type="primary")
-    if entrar:
-        if not usuario or not senha:
-            st.error("Preencha usuário e senha.")
-        else:
-            res = login_banker(usuario.strip(), senha.strip())
-            if res["ok"]:
-                st.session_state.logado      = True
-                st.session_state.banker_id   = res["id"]
-                st.session_state.banker_nome = res["nome"]
-                st.session_state.banker_email = res.get("email", "")
-                st.rerun()
+    _, cmid, _ = st.columns([1, 1.5, 1])
+    with cmid:
+        st.markdown(
+            f'<div class="login-box">{_logo_swm()}<div class="eyebrow">Acesso restrito</div>'
+            '<div class="login-h1">Solicitação de TED e Wire</div>'
+            '<p class="login-sub">Plataforma interna da gestão para bankers e RI com controle e rastreabilidade.</p></div>',
+            unsafe_allow_html=True,
+        )
+        with st.form("login"):
+            usuario = st.text_input("Usuário")
+            senha   = st.text_input("Senha", type="password")
+            entrar  = st.form_submit_button("Entrar", use_container_width=True, type="primary")
+        if entrar:
+            if not usuario or not senha:
+                st.error("Preencha usuário e senha.")
             else:
-                st.error(res["erro"])
+                res = login_banker(usuario.strip(), senha.strip())
+                if res["ok"]:
+                    st.session_state.logado      = True
+                    st.session_state.banker_id   = res["id"]
+                    st.session_state.banker_nome = res["nome"]
+                    st.session_state.banker_email = res.get("email", "")
+                    st.rerun()
+                else:
+                    st.error(res["erro"])
     st.stop()
 
 # ── HEADER ────────────────────────────────────────────────────────────────
 c1, c2 = st.columns([5, 1])
-c1.markdown(f"**TED & Wire** &nbsp;·&nbsp; {st.session_state.banker_nome}")
+c1.markdown(f'<div class="topo-user">{_logo_swm()}<div class="topo-nome"><b>{st.session_state.banker_nome}</b>TED &amp; Wire</div></div>', unsafe_allow_html=True)
 import sheets as _sheets_mod
 c1.caption("versão 21/10 · filtro offshore: " + ("ativo" if getattr(_sheets_mod, "FILTRO_OFF_ATIVO", False) else "INATIVO (sheets.py desatualizado)"))
 if c2.button("Sair"):
     for k in list(st.session_state.keys()):
         del st.session_state[k]
     st.rerun()
-st.divider()
+st.write("")
 
 # Menu principal: TEDs | Wires. É um seletor (não st.tabs) de propósito: com abas o Streamlit executa as duas ao mesmo tempo, e o wire leria a
 # planilha a cada clique da TED (estourou a cota de leitura do Google em 21/10). Escolhida "Wires", só o wire roda.
-modo = st.radio("Menu", ["TEDs", "Wires"], horizontal=True, label_visibility="collapsed", key="menu_principal")
-if modo == "Wires":
+modo = st.radio("Menu", ["TED", "Wire"], horizontal=True, label_visibility="collapsed", key="menu_principal")
+if modo == "Wire":
     try:
         render_wire({"id": st.session_state.banker_id, "nome": st.session_state.banker_nome})
     except Exception as e:
@@ -409,8 +463,13 @@ if modo == "Wires":
     st.stop()
 
 if AVISO_TED:   # configurado no topo do arquivo (AVISO_TED)
-    _msg_aviso = f"**{AVISO_TED['titulo']}**\n\n{AVISO_TED['texto']}"
-    {"info": st.info, "error": st.error}.get(AVISO_TED.get("tipo"), st.warning)(_msg_aviso)
+    import html as _html
+    _tipo_aviso = AVISO_TED.get("tipo") if AVISO_TED.get("tipo") in ("info", "error") else "warn"
+    st.markdown(
+        f'<div class="aviso aviso-{_tipo_aviso}"><div class="ic">!</div><div>'
+        f'<strong>{_html.escape(AVISO_TED["titulo"])}</strong><span>{_html.escape(AVISO_TED["texto"])}</span></div></div>',
+        unsafe_allow_html=True,
+    )
 
 tab1, tab2 = st.tabs(["Nova solicitação", "Minhas solicitações"])
 
@@ -443,8 +502,12 @@ with tab1:
             st.warning("⚠️ O e-mail automático para a equipe de operações não saiu. Avise o time de Middle.")
         else:
             st.success("✅ Solicitação enviada! A equipe de operações foi notificada por e-mail.")
-        st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. "
-                "Não refaça a solicitação.")
+        if EMAIL_CONFIRMACAO_INDISPONIVEL:
+            st.info("O e-mail de confirmação e o comprovante estão temporariamente indisponíveis. "
+                    "A solicitação foi registrada e será processada pela equipe. Não refaça a solicitação.")
+        else:
+            st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. "
+                    "Não refaça a solicitação.")
         if d["conta_nova"]:
             st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
 
@@ -452,7 +515,8 @@ with tab1:
         # ted_to_notion_novo.py (notificar_nova_ted), assim que a sync processar
         # esta solicitação — não é mais síncrona com o submit, por isso sem
         # feedback de status aqui (ver comentário em "enviando" acima).
-        st.info("📧 A confirmação por e-mail (pra você e pro seu time) chega em instantes, assim que a sincronização processar.")
+        if not EMAIL_CONFIRMACAO_INDISPONIVEL:
+            st.info("📧 A confirmação por e-mail (pra você e pro seu time) chega em instantes, assim que a sincronização processar.")
 
         st.markdown("**Resumo da solicitação**")
         for label, val in [
@@ -633,6 +697,11 @@ with tab1:
             st.warning("⚠️ Conta nova — será cadastrada pela equipe após execução.")
 
         st.subheader("3 · Dados da transferência")
+        st.markdown(
+            f'<div class="nota"><b>Horário de corte: {CUTOFF_HOUR}h.</b> '
+            'Solicitações após esse horário podem ser processadas no próximo dia útil.</div>',
+            unsafe_allow_html=True,
+        )
 
         # auto-formata ao sair do campo
         if "valor_ted" in st.session_state:
