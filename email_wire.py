@@ -1,5 +1,5 @@
 """Boletador de Wire (BETA) — e-mail de notificação. Autocontido.
-Segredos (st.secrets): EMAIL_FROM, EMAIL_PASSWORD; BETA_DESTINO (padrão middle@swmgestao.com.br); MOCK_EMAIL (true = não envia, só mostra; padrão false, igual à TED)."""
+Segredos (st.secrets): EMAIL_FROM, EMAIL_PASSWORD; MOCK_EMAIL (true = não envia, só mostra; padrão false, igual à TED)."""
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import streamlit as st
 
-DESTINO_PADRAO = "automacao@swmgestao.com.br"
+DESTINO_PADRAO = "middle@swmgestao.com.br"  # 17/11/2026: igual à TED (o middle@ repassa à automacao@)
 
 
 def _montar(d):
@@ -35,7 +35,7 @@ def enviar(d, arquivos):
     if st.secrets.get("MOCK_EMAIL", False):
         return {"mock": True, "assunto": assunto, "corpo": corpo}
     de, senha = st.secrets["EMAIL_FROM"], st.secrets["EMAIL_PASSWORD"]
-    para = st.secrets.get("BETA_DESTINO", DESTINO_PADRAO)
+    para = DESTINO_PADRAO
     m = MIMEMultipart()
     m["From"], m["To"], m["Subject"] = de, para, assunto
     m.attach(MIMEText(corpo, "plain", "utf-8"))
@@ -55,7 +55,7 @@ def enviar_cancelamento(d):
     if st.secrets.get("MOCK_EMAIL", False):
         return {"mock": True, "assunto": assunto, "corpo": corpo}
     de, senha = st.secrets["EMAIL_FROM"], st.secrets["EMAIL_PASSWORD"]
-    para = st.secrets.get("BETA_DESTINO", DESTINO_PADRAO)
+    para = DESTINO_PADRAO
     m = MIMEMultipart()
     m["From"], m["To"], m["Subject"] = de, para, assunto
     m.attach(MIMEText(corpo, "plain", "utf-8"))
