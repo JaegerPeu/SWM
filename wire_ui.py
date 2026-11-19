@@ -79,7 +79,7 @@ def _novo_wire(banker):
         if f["mail"].get("mock"):
             st.info("Modo teste: e-mail NÃO enviado. Conteúdo abaixo.")
             st.code(f["mail"]["assunto"] + "\n\n" + f["mail"]["corpo"])
-        st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. Não refaça a solicitação.")
+        st.error("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. Não refaça a solicitação.")   # vermelho claro (19/11/2026)
         if st.button("Nova solicitação de wire", type="primary", key="w_nova"):
             ss.w_feito = None
             ss.w_n += 1
@@ -153,15 +153,16 @@ def _novo_wire(banker):
             swift = a.text_input("SWIFT do banco do beneficiário *", key=f"wbw{k}")
             pais = b_.text_input("País do banco *", key=f"wbp{k}")
             if inter == "Sim":
-                iname = a.text_input("Nome do banco intermediário *", key=f"wbi{k}")
-                aba = b_.text_input("ABA do banco intermediário *", key=f"wba{k}")
+                # intermediário não é obrigatório (pedido do usuário, 19/11/2026)
+                iname = a.text_input("Nome do banco intermediário (opcional)", key=f"wbi{k}")
+                aba = b_.text_input("ABA do banco intermediário (opcional)", key=f"wba{k}")
             else:
                 iname = ""
                 aba = a.text_input("ABA do banco do beneficiário *", key=f"wba{k}")
             benef = {"id": "", "beneficiario_nome": nome.strip(), "segundo_beneficiario": seg.strip(), "conta": conta.strip(), "banco_nome": banco.strip(),
                      "swift": swift.strip().upper(), "pais": pais.strip(), "precisa_intermediario": "SIM" if inter == "Sim" else "NÃO",
                      "intermediario_nome": iname.strip(), "aba": aba.strip()}
-            ok_benef = all([nome.strip(), conta.strip(), banco.strip(), swift.strip(), pais.strip(), aba.strip()]) and (inter == "Não" or bool(iname.strip()))
+            ok_benef = all([nome.strip(), conta.strip(), banco.strip(), swift.strip(), pais.strip()]) and (inter == "Sim" or bool(aba.strip()))
 
     ref = st.text_input("Referência adicional (opcional)", max_chars=128, key=f"wref{k}")
     anexos = st.file_uploader("Documentos de suporte" + (" *" if terceiro else " (opcional)"), accept_multiple_files=True, key=f"wanx{k}")

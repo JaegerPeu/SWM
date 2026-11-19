@@ -581,8 +581,8 @@ with tab1:
             st.info("O e-mail de confirmação e o comprovante estão temporariamente indisponíveis. "
                     "A solicitação foi registrada e será processada pela equipe. Não refaça a solicitação.")
         else:
-            st.info("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. "
-                    "Não refaça a solicitação.")
+            st.error("Caso o e-mail de confirmação não chegue em até 5 minutos, entre em contato com o time de Middle. "
+                     "Não refaça a solicitação.")   # vermelho claro para destacar (pedido 19/11/2026)
         if d["conta_nova"]:
             st.warning("⚠️ Conta nova — a equipe irá cadastrar após execução.")
 
